@@ -10,7 +10,6 @@ __pycache__/
 node_modules/
 frontend/node_modules/
 .npm
-dist/
 
 # SQLite & Data
 *.db-journal
