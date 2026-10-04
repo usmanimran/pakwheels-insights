@@ -15,6 +15,7 @@ import {
   fetchListings,
   fetchAnalytics,
   fetchScanStatus,
+  fetchSnapshots,
   getScrapeStreamUrl,
   getExportCsvUrl
 } from './services/api';
@@ -62,6 +63,10 @@ export default function App() {
   const [scanType, setScanType] = useState('all'); // 'all' (fetch all listings) or 'quick'
   const [scanStatus, setScanStatus] = useState(null);
 
+  // Historical Market Snapshots State
+  const [availableSnapshots, setAvailableSnapshots] = useState([]);
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState(null);
+
   // Scraping Progress State
   const [isScraping, setIsScraping] = useState(false);
   const [scrapeProgress, setScrapeProgress] = useState(null);
@@ -103,7 +108,8 @@ export default function App() {
         const res = await fetchVariants({
           make: selectedMake,
           model: selectedModel === 'All Models' ? undefined : selectedModel,
-          cities: citiesParam
+          cities: citiesParam,
+          snapshot_id: selectedSnapshotId || undefined,
         });
         setAvailableVariants(res.variants || []);
       } catch (err) {
@@ -111,9 +117,32 @@ export default function App() {
       }
     };
     loadVariants();
+  }, [selectedMake, selectedModel, selectedCities, selectedSnapshotId]);
+
+  // 3. Fetch Historical Market Snapshots whenever Make, Model, or Cities change
+  useEffect(() => {
+    const loadSnapshots = async () => {
+      try {
+        const citiesParam = selectedCities.includes('All Pakistan') ? undefined : selectedCities.join(',');
+        const res = await fetchSnapshots({
+          make: selectedMake,
+          model: selectedModel === 'All Models' ? undefined : selectedModel,
+          cities: citiesParam,
+        });
+        const list = res.snapshots || [];
+        setAvailableSnapshots(list);
+        // By default, select latest snapshot if available
+        if (list.length > 0 && selectedSnapshotId === null) {
+          setSelectedSnapshotId(list[0].id);
+        }
+      } catch (err) {
+        console.error('Error fetching snapshots:', err);
+      }
+    };
+    loadSnapshots();
   }, [selectedMake, selectedModel, selectedCities]);
 
-  // 3. Fetch Scan Status & Cache Metadata (Cache First)
+  // 4. Fetch Scan Status & Cache Metadata (Cache First)
   useEffect(() => {
     const loadScanStatus = async () => {
       try {
@@ -131,7 +160,7 @@ export default function App() {
     loadScanStatus();
   }, [selectedMake, selectedModel, selectedCities]);
 
-  // 4. Fetch Listings & Analytics from DB Cache
+  // 5. Fetch Listings & Analytics from DB Cache / Historical Snapshot
   const refreshData = async (resetPage = false) => {
     setLoadingData(true);
     const currentPage = resetPage ? 1 : page;
@@ -154,6 +183,7 @@ export default function App() {
       sort_by: filters.sort_by,
       limit: PAGE_SIZE,
       offset: (currentPage - 1) * PAGE_SIZE,
+      snapshot_id: selectedSnapshotId || undefined,
     };
 
     try {
@@ -172,7 +202,7 @@ export default function App() {
 
   useEffect(() => {
     refreshData(true);
-  }, [selectedMake, selectedModel, selectedVariant, selectedCities, minYear, maxYear, filters]);
+  }, [selectedMake, selectedModel, selectedVariant, selectedCities, minYear, maxYear, filters, selectedSnapshotId]);
 
   useEffect(() => {
     refreshData(false);
@@ -222,10 +252,17 @@ export default function App() {
         if (data.status === 'done') {
           eventSource.close();
           setIsScraping(false);
-          // Reload scan status, variants and data
+          // Reload scan status, variants, snapshots and data
           const citiesParam = isAll ? undefined : cities.join(',');
           fetchScanStatus({ make, model, cities: citiesParam }).then(setScanStatus);
           fetchVariants({ make, model, cities: citiesParam }).then((res) => setAvailableVariants(res.variants || []));
+          fetchSnapshots({ make, model, cities: citiesParam }).then((res) => {
+            const list = res.snapshots || [];
+            setAvailableSnapshots(list);
+            if (data.snapshot_id) {
+              setSelectedSnapshotId(data.snapshot_id);
+            }
+          });
           refreshData(true);
         } else if (data.status === 'error') {
           eventSource.close();
@@ -290,6 +327,7 @@ export default function App() {
     min_price: filters.min_price,
     max_price: filters.max_price,
     transmission: filters.transmission,
+    snapshot_id: selectedSnapshotId || undefined,
   });
 
   const totalPages = Math.ceil((listingsData?.total || 0) / PAGE_SIZE);
@@ -339,6 +377,9 @@ export default function App() {
               onStartScrape={handleStartScrape}
               isScraping={isScraping}
               scanStatus={scanStatus}
+              snapshots={availableSnapshots}
+              selectedSnapshotId={selectedSnapshotId}
+              setSelectedSnapshotId={setSelectedSnapshotId}
             />
 
             {/* Top KPI Cards (Mobile friendly 2-col, Desktop 5-col) */}

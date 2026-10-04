@@ -19,7 +19,8 @@ from database.db import (
     query_listings,
     get_all_records_for_analytics,
     get_variants_for_model,
-    get_last_scan_metadata
+    get_last_scan_metadata,
+    get_market_snapshots
 )
 from scraper.catalog import (
     scrape_full_catalog,
@@ -147,15 +148,28 @@ def get_scan_status(
         "scan_type": meta["scan_type"] if meta else None
     }
 
+@app.get("/api/snapshots")
+def get_snapshots(
+    make: Optional[str] = Query(None),
+    model: Optional[str] = Query(None),
+    cities: Optional[str] = Query(None)
+):
+    """Returns available historical market snapshots for make and model with dates, car counts, and stats."""
+    clean_make = None if make and make.lower() in ["all", "all makes", "whole market"] else make
+    clean_model = None if model and model.lower() in ["all", "all models"] else model
+    snapshots = get_market_snapshots(make=clean_make, model=clean_model, cities=cities)
+    return {"snapshots": snapshots}
+
 @app.get("/api/variants")
 def get_variants(
     make: Optional[str] = Query(None),
     model: Optional[str] = Query(None),
     cities: Optional[str] = Query(None),
-    city: Optional[str] = Query(None)
+    city: Optional[str] = Query(None),
+    snapshot_id: Optional[str] = Query(None)
 ):
-    """Returns distinct variants present in the database for the given make, model, and cities."""
-    variants = get_variants_for_model(make=make, model=model, cities=cities, city=city)
+    """Returns distinct variants present in the database for the given make, model, cities, and optional snapshot."""
+    variants = get_variants_for_model(make=make, model=model, cities=cities, city=city, snapshot_id=snapshot_id)
     return {"variants": variants}
 
 @app.post("/api/catalog/sync")
@@ -227,9 +241,10 @@ def get_listings(
     variant: Optional[str] = Query(None),
     sort_by: str = Query("newest"),
     limit: int = Query(30, ge=1, le=200),
-    offset: int = Query(0, ge=0)
+    offset: int = Query(0, ge=0),
+    snapshot_id: Optional[str] = Query(None)
 ):
-    """Returns paginated listings according to filter and sort criteria."""
+    """Returns paginated listings according to filter, sort criteria, and optional historical snapshot."""
     result = query_listings(
         make=make,
         model=model,
@@ -245,7 +260,8 @@ def get_listings(
         variant=variant,
         sort_by=sort_by,
         limit=limit,
-        offset=offset
+        offset=offset,
+        snapshot_id=snapshot_id
     )
     return result
 
@@ -260,9 +276,10 @@ def get_analytics(
     min_price: Optional[int] = Query(None),
     max_price: Optional[int] = Query(None),
     transmission: Optional[str] = Query(None),
-    variant: Optional[str] = Query(None)
+    variant: Optional[str] = Query(None),
+    snapshot_id: Optional[str] = Query(None)
 ):
-    """Calculates statistical metrics, price trends, and scatter coordinates."""
+    """Calculates statistical metrics, price trends, and scatter coordinates for active or snapshot data."""
     records = get_all_records_for_analytics(
         make=make,
         model=model,
@@ -273,7 +290,8 @@ def get_analytics(
         min_price=min_price,
         max_price=max_price,
         transmission=transmission,
-        variant=variant
+        variant=variant,
+        snapshot_id=snapshot_id
     )
     analytics = compute_market_analytics(records)
     return analytics
@@ -410,7 +428,8 @@ def export_listings_csv(
     min_price: Optional[int] = Query(None),
     max_price: Optional[int] = Query(None),
     transmission: Optional[str] = Query(None),
-    variant: Optional[str] = Query(None)
+    variant: Optional[str] = Query(None),
+    snapshot_id: Optional[str] = Query(None)
 ):
     """Exports filtered listings into CSV format."""
     records = get_all_records_for_analytics(
@@ -423,7 +442,8 @@ def export_listings_csv(
         min_price=min_price,
         max_price=max_price,
         transmission=transmission,
-        variant=variant
+        variant=variant,
+        snapshot_id=snapshot_id
     )
 
     output = io.StringIO()

@@ -42,6 +42,7 @@ class TestSQAAndFeatures(unittest.TestCase):
         conn = get_connection()
         conn.execute("DELETE FROM listings;")
         conn.execute("DELETE FROM scan_metadata;")
+        conn.execute("DELETE FROM app_settings;")
         conn.commit()
         conn.close()
 
@@ -249,24 +250,30 @@ class TestSQAAndFeatures(unittest.TestCase):
         t4 = generate_segment_title("Suzuki", "Alto", "VXL AGS", "Lahore", 2022, 2022)
         self.assertEqual(t4, "Suzuki Alto (VXL AGS) (2022) in Lahore")
 
-    def test_db_export_and_import(self):
-        from fastapi.testclient import TestClient
-        from main import app
-        client = TestClient(app)
+    def test_market_snapshots_creation_and_query(self):
+        from database.db import create_market_snapshot, get_market_snapshots, query_listings, get_all_records_for_analytics
+        listings_batch = [
+            {"pakwheels_id": 9001, "make": "Suzuki", "model": "Alto", "price_pkr": 2500000, "mileage_km": 20000, "year": 2022, "city": "Lahore"},
+            {"pakwheels_id": 9002, "make": "Suzuki", "model": "Alto", "price_pkr": 2700000, "mileage_km": 15000, "year": 2023, "city": "Lahore"},
+        ]
+        snap_id = create_market_snapshot("Suzuki", "Alto", "Lahore", "all", listings_batch)
+        self.assertGreater(snap_id, 0)
 
-        # 1. Test export
-        export_resp = client.get("/api/db/export")
-        self.assertEqual(export_resp.status_code, 200)
-        self.assertTrue(export_resp.content.startswith(b"SQLite format 3"))
+        # Verify snapshot appears in list
+        snaps = get_market_snapshots("Suzuki", "Alto")
+        self.assertTrue(any(s["id"] == snap_id for s in snaps))
+        found = next(s for s in snaps if s["id"] == snap_id)
+        self.assertEqual(found["total_listings"], 2)
+        self.assertEqual(found["avg_price_lacs"], 26.0)
 
-        # 2. Test import with invalid content
-        bad_import = client.post("/api/db/import", files={"file": ("test.db", b"not a valid sqlite file")})
-        self.assertEqual(bad_import.status_code, 400)
+        # Query listings by snapshot_id
+        res = query_listings(make="Suzuki", model="Alto", snapshot_id=snap_id)
+        self.assertEqual(res["total"], 2)
+        self.assertEqual({it["pakwheels_id"] for it in res["items"]}, {9001, 9002})
 
-        # 3. Test import with valid content
-        good_import = client.post("/api/db/import", files={"file": ("pakwheels.db", export_resp.content)})
-        self.assertEqual(good_import.status_code, 200)
-        self.assertEqual(good_import.json()["status"], "ok")
+        # Query analytics by snapshot_id
+        records = get_all_records_for_analytics(make="Suzuki", model="Alto", snapshot_id=snap_id)
+        self.assertEqual(len(records), 2)
 
     def test_proxy_settings_endpoints(self):
         from fastapi.testclient import TestClient
@@ -292,6 +299,25 @@ class TestSQAAndFeatures(unittest.TestCase):
         self.assertEqual(r4.status_code, 200)
         r5 = client.get("/api/settings/proxy")
         self.assertEqual(r5.json()["proxy"], "")
+
+    def test_z_db_export_and_import(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        client = TestClient(app)
+
+        # 1. Test export
+        export_resp = client.get("/api/db/export")
+        self.assertEqual(export_resp.status_code, 200)
+        self.assertTrue(export_resp.content.startswith(b"SQLite format 3"))
+
+        # 2. Test import with invalid content
+        bad_import = client.post("/api/db/import", files={"file": ("test.db", b"not a valid sqlite file")})
+        self.assertEqual(bad_import.status_code, 400)
+
+        # 3. Test import with valid content
+        good_import = client.post("/api/db/import", files={"file": ("pakwheels.db", export_resp.content)})
+        self.assertEqual(good_import.status_code, 200)
+        self.assertEqual(good_import.json()["status"], "ok")
 
 if __name__ == '__main__':
     unittest.main()

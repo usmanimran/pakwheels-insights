@@ -34,7 +34,10 @@ export default function SearchBar({
   setScanType,
   onStartScrape,
   isScraping,
-  scanStatus
+  scanStatus,
+  snapshots = [],
+  selectedSnapshotId = null,
+  setSelectedSnapshotId,
 }) {
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const cityDropdownRef = useRef(null);
@@ -318,23 +321,51 @@ export default function SearchBar({
 
       </div>
 
-      {/* Row 2: Cache First Status Ribbon */}
+      {/* Row 2: Cache First Status Ribbon & Historical Fetch Selector */}
       <div className="mt-3 pt-2.5 border-t border-slate-200 dark:border-[#1C3B66] flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center space-x-2 text-[11px] sm:text-xs">
-          <Database className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400 flex-shrink-0" />
-          <span className="text-slate-600 dark:text-slate-300">
-            {scanStatus?.has_cached_data ? (
-              <>
-                Database: <strong className="text-slate-900 dark:text-white font-bold">{scanStatus.count} cars</strong> stored
-                <span className="text-slate-400 dark:text-slate-500 mx-1.5">•</span>
-                Last updated: <span className="text-emerald-600 dark:text-emerald-400 font-bold">{scanStatus.time_ago}</span>
-              </>
-            ) : (
-              <span className="text-slate-500 dark:text-slate-400">
-                Click <strong>Fetch Live</strong> to crawl PakWheels listings.
-              </span>
-            )}
-          </span>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] sm:text-xs">
+          <div className="flex items-center space-x-1.5 text-slate-700 dark:text-slate-300">
+            <Database className="w-3.5 h-3.5 text-sky-500 dark:text-sky-400 flex-shrink-0" />
+            <span className="font-bold">Dataset:</span>
+          </div>
+
+          {/* Historical Fetch / Snapshot Selector Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedSnapshotId || 'all'}
+              onChange={(e) => setSelectedSnapshotId && setSelectedSnapshotId(e.target.value === 'all' ? null : Number(e.target.value))}
+              className="bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#16345C] text-slate-900 dark:text-white font-bold text-[11px] rounded-xl pl-2.5 pr-7 py-1 border border-slate-300 dark:border-[#1A3B6B] focus:outline-none focus:border-sky-500 transition appearance-none cursor-pointer shadow-sm"
+              title="Select a historical market snapshot or view cumulative records"
+            >
+              {snapshots && snapshots.length > 0 ? (
+                <>
+                  {snapshots.map((s, idx) => (
+                    <option key={s.id} value={s.id}>
+                      🕒 {s.label} ({s.total_listings} cars{idx === 0 ? ' • Latest' : ''})
+                    </option>
+                  ))}
+                  <option value="all">
+                    🌐 All Cumulative Records ({scanStatus?.count || 'All time'})
+                  </option>
+                </>
+              ) : (
+                <option value="all">
+                  🌐 Master Database ({scanStatus?.count || 0} cars)
+                </option>
+              )}
+            </select>
+            <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+
+          {selectedSnapshotId ? (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/25 font-bold flex items-center space-x-1">
+              <span>Historical Snapshot</span>
+            </span>
+          ) : (
+            <span className="text-slate-500 dark:text-slate-400 text-[10px]">
+              {scanStatus?.time_ago ? `Updated ${scanStatus.time_ago}` : 'Cumulative dataset'}
+            </span>
+          )}
         </div>
 
         {/* Selected City Chips */}

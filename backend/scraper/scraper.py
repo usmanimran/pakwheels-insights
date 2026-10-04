@@ -5,7 +5,7 @@ import logging
 from typing import List, Dict, Any, Optional, AsyncGenerator, Tuple
 import httpx
 from bs4 import BeautifulSoup
-from database.db import upsert_listings, record_scan_metadata
+from database.db import upsert_listings, record_scan_metadata, create_market_snapshot
 
 try:
     from curl_cffi.requests import AsyncSession
@@ -463,7 +463,21 @@ async def scrape_listings_generator(
                     "message": f"Scraped page {current_done} of {max_pages} ({len(all_listings)} listings saved)"
                 }
 
-    # Record scan metadata in database
+    # Record scan metadata and historical market snapshot in database
+    new_snapshot_id = None
+    if all_listings:
+        try:
+            new_snapshot_id = create_market_snapshot(
+                make=make_name,
+                model=model_name,
+                cities=city_name,
+                scan_type=scan_type,
+                listings=all_listings
+            )
+            logger.info(f"Created historical market snapshot #{new_snapshot_id} with {len(all_listings)} listings")
+        except Exception as e:
+            logger.warning(f"Could not record market snapshot: {e}")
+
     try:
         record_scan_metadata(make_name, model_name, city_name, len(all_listings), scan_type)
     except Exception as e:
@@ -476,6 +490,7 @@ async def scrape_listings_generator(
         "overall_total_pages": total_pages,
         "count": len(all_listings),
         "percent": 100,
-        "message": f"Complete! {len(all_listings)} listings ready."
+        "snapshot_id": new_snapshot_id,
+        "message": f"Complete! {len(all_listings)} listings saved in new market snapshot."
     }
 

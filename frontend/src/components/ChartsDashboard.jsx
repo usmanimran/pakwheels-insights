@@ -18,7 +18,7 @@ import {
 import {
   TrendingUp, ScatterChart as ScatterIcon, Layers, PieChart as PieIcon,
   BarChart2, ExternalLink, ZoomIn, ZoomOut, RotateCcw, Calendar, Check,
-  Award, Sparkles, HelpCircle, Info, X
+  Award, Sparkles, HelpCircle, Info, X, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
 // Custom Tooltip for Price vs Model Year
@@ -124,10 +124,11 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
   const [scatterSubView, setScatterSubView] = useState('chart');
   const [showFairValueModal, setShowFairValueModal] = useState(false);
 
-  // Zoom State for Scatter Plot
+  // Horizontal Mileage Zoom & Pan State (Y-axis Price is permanently locked to full range)
   const [zoomFactor, setZoomFactor] = useState(1);
-  const [mileageZoomMax, setMileageZoomMax] = useState(null);
-  const [priceZoomMax, setPriceZoomMax] = useState(null);
+  const [mileageMin, setMileageMin] = useState(0);
+  const [mileageMax, setMileageMax] = useState(null);
+  const [selectedMileagePreset, setSelectedMileagePreset] = useState('all');
   const [activeScatterPoint, setActiveScatterPoint] = useState(null);
 
   // Compute filtered year stats for mobile era filter
@@ -158,6 +159,10 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     return Math.max(sorted[idx], 100000);
   }, [rawMileages]);
 
+  const fullMaxMileage = useMemo(() => {
+    return Math.ceil(p98Mileage * 1.12);
+  }, [p98Mileage]);
+
   const p98Price = useMemo(() => {
     if (!rawPrices.length) return 50;
     const sorted = [...rawPrices].sort((a, b) => a - b);
@@ -165,27 +170,27 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     return Math.max(sorted[idx], 15);
   }, [rawPrices]);
 
+  // Price Domain: PERMANENTLY FIXED to full price range. Never zooms vertically!
   const dynamicPriceDomain = useMemo(() => {
     if (!rawPrices.length) return [0, 50];
     const min = Math.min(...rawPrices);
     const padMin = Math.max(0, Math.floor(min * 0.85));
-    const padMax = priceZoomMax || Math.ceil(p98Price * 1.15);
+    const padMax = Math.ceil(p98Price * 1.15);
     return [padMin, padMax];
-  }, [rawPrices, p98Price, priceZoomMax]);
+  }, [rawPrices, p98Price]);
 
+  // Mileage Domain: Horizontal-only zoom and pan
   const dynamicMileageDomain = useMemo(() => {
-    if (!rawMileages.length) return [0, 150000];
-    const min = Math.min(...rawMileages);
-    const padMin = Math.max(0, Math.floor(min * 0.8));
-    const padMax = mileageZoomMax || Math.ceil(p98Mileage * 1.12);
-    return [padMin, padMax];
-  }, [rawMileages, p98Mileage, mileageZoomMax]);
+    const effectiveMax = mileageMax || fullMaxMileage;
+    return [mileageMin, effectiveMax];
+  }, [mileageMin, mileageMax, fullMaxMileage]);
 
-  // Compute linear regression Fair Value Trendline (Price vs Mileage)
+  // Compute linear regression Fair Value Trendline (Price vs Mileage) across visible range
   const fairValueTrendData = useMemo(() => {
-    const maxX = dynamicMileageDomain[1] || 150000;
+    const minX = dynamicMileageDomain[0];
+    const maxX = dynamicMileageDomain[1];
     const validPoints = allScatterPoints.filter(
-      (p) => p.mileage > 0 && p.price_lacs > 0 && p.mileage <= maxX * 1.2
+      (p) => p.mileage > 0 && p.price_lacs > 0
     );
     if (validPoints.length < 3) return [];
 
@@ -202,7 +207,6 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     const slope = (n * sumXY - sumX * sumY) / denom;
     const intercept = (sumY - slope * sumX) / n;
 
-    const minX = dynamicMileageDomain[0] || 0;
     const yAtMin = Math.max(0.5, Number((intercept + slope * minX).toFixed(2)));
     const yAtMax = Math.max(0.5, Number((intercept + slope * maxX).toFixed(2)));
 
@@ -212,17 +216,18 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     ];
   }, [allScatterPoints, dynamicMileageDomain]);
 
-  // Filter scatter points by rating filter and zoom
+  // Filter scatter points by rating filter and horizontal mileage window
   const displayedScatterPoints = useMemo(() => {
+    const minM = dynamicMileageDomain[0];
+    const maxM = dynamicMileageDomain[1];
     return allScatterPoints.filter((p) => {
       if (dealRatingFilter === 'great' && p.rating !== 'Great Deal') return false;
       if (dealRatingFilter === 'fair' && p.rating !== 'Fair Price') return false;
       if (dealRatingFilter === 'above' && p.rating !== 'Above Market') return false;
-      if (mileageZoomMax && p.mileage > mileageZoomMax) return false;
-      if (priceZoomMax && p.price_lacs > priceZoomMax) return false;
+      if (p.mileage < minM || p.mileage > maxM) return false;
       return true;
     });
-  }, [allScatterPoints, dealRatingFilter, mileageZoomMax, priceZoomMax]);
+  }, [allScatterPoints, dealRatingFilter, dynamicMileageDomain]);
 
   // Count by rating for quick pills
   const ratingCounts = useMemo(() => {
@@ -241,7 +246,6 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     return [...allScatterPoints]
       .filter((p) => p.rating === 'Great Deal' || (avgPrice > 0 && p.price_lacs < avgPrice))
       .sort((a, b) => {
-        // Prioritize Great Deal, then price
         if (a.rating === 'Great Deal' && b.rating !== 'Great Deal') return -1;
         if (b.rating === 'Great Deal' && a.rating !== 'Great Deal') return 1;
         return a.price_lacs - b.price_lacs;
@@ -259,93 +263,123 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     return null;
   }, [activeScatterPoint, displayedScatterPoints]);
 
-  const handleZoomIn = (step = 0.35) => {
-    setZoomFactor((prev) => Math.min(Number((prev + step).toFixed(1)), 4));
-    setMileageZoomMax((prev) => {
-      const current = prev || dynamicMileageDomain[1];
-      return Math.max(Math.round(current * (1 - step * 0.45)), 25000);
-    });
-    setPriceZoomMax((prev) => {
-      const current = prev || dynamicPriceDomain[1];
-      return Math.max(Math.round(current * (1 - step * 0.45)), 8);
+  // Horizontal-only zoom handlers
+  const handleZoomIn = () => {
+    setZoomFactor((prev) => {
+      const next = Math.min(Number((prev + 0.5).toFixed(1)), 4);
+      const span = Math.round(fullMaxMileage / next);
+      const curCenter = (dynamicMileageDomain[0] + dynamicMileageDomain[1]) / 2;
+      let newMin = Math.max(0, Math.round(curCenter - span / 2));
+      let newMax = newMin + span;
+      if (newMax > fullMaxMileage) {
+        newMax = fullMaxMileage;
+        newMin = Math.max(0, newMax - span);
+      }
+      setMileageMin(newMin);
+      setMileageMax(newMax);
+      setSelectedMileagePreset('custom');
+      return next;
     });
   };
 
-  const handleZoomOut = (step = 0.35) => {
-    setZoomFactor((prev) => Math.max(Number((prev - step).toFixed(1)), 1));
-    setMileageZoomMax((prev) => {
-      const current = prev || dynamicMileageDomain[1];
-      const maxAllowed = Math.ceil(p98Mileage * 1.25);
-      return Math.min(Math.round(current * (1 + step * 0.45)), maxAllowed);
+  const handleZoomOut = () => {
+    setZoomFactor((prev) => {
+      const next = Math.max(Number((prev - 0.5).toFixed(1)), 1);
+      if (next === 1) {
+        handleResetZoom();
+        return 1;
+      }
+      const span = Math.round(fullMaxMileage / next);
+      const curCenter = (dynamicMileageDomain[0] + dynamicMileageDomain[1]) / 2;
+      let newMin = Math.max(0, Math.round(curCenter - span / 2));
+      let newMax = newMin + span;
+      if (newMax > fullMaxMileage) {
+        newMax = fullMaxMileage;
+        newMin = Math.max(0, newMax - span);
+      }
+      setMileageMin(newMin);
+      setMileageMax(newMax);
+      setSelectedMileagePreset('custom');
+      return next;
     });
-    setPriceZoomMax((prev) => {
-      const current = prev || dynamicPriceDomain[1];
-      const maxAllowed = Math.ceil(p98Price * 1.25);
-      return Math.min(Math.round(current * (1 + step * 0.45)), maxAllowed);
-    });
+  };
+
+  const handlePanLeft = () => {
+    const span = (mileageMax || fullMaxMileage) - mileageMin;
+    const step = Math.round(span * 0.35);
+    const newMin = Math.max(0, mileageMin - step);
+    const newMax = newMin + span;
+    setMileageMin(newMin);
+    setMileageMax(newMax);
+    setSelectedMileagePreset('custom');
+  };
+
+  const handlePanRight = () => {
+    const span = (mileageMax || fullMaxMileage) - mileageMin;
+    const step = Math.round(span * 0.35);
+    const newMax = Math.min(fullMaxMileage, (mileageMax || fullMaxMileage) + step);
+    const newMin = Math.max(0, newMax - span);
+    setMileageMin(newMin);
+    setMileageMax(newMax);
+    setSelectedMileagePreset('custom');
   };
 
   const handleResetZoom = () => {
     setZoomFactor(1);
-    setMileageZoomMax(null);
-    setPriceZoomMax(null);
+    setMileageMin(0);
+    setMileageMax(null);
+    setSelectedMileagePreset('all');
   };
 
-  // Pinch-to-zoom touch gesture state
-  const touchState = useRef({
-    initialDistance: 0,
-    isPinching: false,
-    startX: 0,
-    startY: 0
-  });
+  const handleSelectBracket = (bracket) => {
+    setSelectedMileagePreset(bracket);
+    if (bracket === 'all') {
+      handleResetZoom();
+    } else if (bracket === '0-30k') {
+      setMileageMin(0);
+      setMileageMax(30000);
+      setZoomFactor(Math.max(1, Number((fullMaxMileage / 30000).toFixed(1))));
+    } else if (bracket === '30-70k') {
+      setMileageMin(30000);
+      setMileageMax(70000);
+      setZoomFactor(Math.max(1, Number((fullMaxMileage / 40000).toFixed(1))));
+    } else if (bracket === '70-120k') {
+      setMileageMin(70000);
+      setMileageMax(120000);
+      setZoomFactor(Math.max(1, Number((fullMaxMileage / 50000).toFixed(1))));
+    } else if (bracket === '120k+') {
+      setMileageMin(120000);
+      setMileageMax(fullMaxMileage);
+      setZoomFactor(Math.max(1, Number((fullMaxMileage / Math.max(15000, fullMaxMileage - 120000)).toFixed(1))));
+    }
+  };
+
+  // Safe single-finger touch swipe for horizontal panning (NO page zooming)
+  const touchStartRef = useRef(null);
 
   const handleChartTouchStart = (e) => {
-    if (e.touches.length === 2) {
-      // 2 fingers: pinch gesture
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      touchState.current.initialDistance = dist;
-      touchState.current.isPinching = true;
-    } else if (e.touches.length === 1) {
-      touchState.current.isPinching = false;
-      touchState.current.startX = e.touches[0].clientX;
-      touchState.current.startY = e.touches[0].clientY;
+    if (e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
     }
   };
 
-  const handleChartTouchMove = (e) => {
-    if (e.touches.length === 2 && touchState.current.isPinching) {
-      if (e.cancelable) e.preventDefault();
-      const t1 = e.touches[0];
-      const t2 = e.touches[1];
-      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      const ratio = dist / (touchState.current.initialDistance || 1);
+  const handleChartTouchEnd = (e) => {
+    if (!touchStartRef.current || !e.changedTouches.length) return;
+    const diffX = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const diffY = e.changedTouches[0].clientY - touchStartRef.current.y;
 
-      if (ratio > 1.1) {
-        // Pinching outward -> Zoom In
-        handleZoomIn(0.2);
-        touchState.current.initialDistance = dist;
-      } else if (ratio < 0.9) {
-        // Pinching inward -> Zoom Out
-        handleZoomOut(0.2);
-        touchState.current.initialDistance = dist;
-      }
-    }
-  };
-
-  const handleChartTouchEnd = () => {
-    touchState.current.isPinching = false;
-  };
-
-  const handleChartWheel = (e) => {
-    if (Math.abs(e.deltaY) > 25) {
-      if (e.deltaY < 0) {
-        handleZoomIn(0.2);
+    // Only pan horizontally if horizontal movement strongly exceeds vertical movement
+    if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+      if (diffX > 0) {
+        handlePanLeft();
       } else {
-        handleZoomOut(0.2);
+        handlePanRight();
       }
     }
+    touchStartRef.current = null;
   };
 
   if (loading || !analytics || analytics.total_listings === 0) {
@@ -552,6 +586,34 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
         {activeTab === 'scatter' && (
           <div className="w-full h-full flex flex-col justify-between">
             
+            {/* Inline Fair Value Explainer Line with (i) Icon */}
+            <div className="mb-2.5 px-3 py-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 flex items-center justify-between text-[11px] text-slate-700 dark:text-slate-300">
+              <div className="flex items-center space-x-1.5 flex-1 min-w-0 mr-2">
+                <button
+                  type="button"
+                  onClick={() => setShowFairValueModal(true)}
+                  title="How Fair Value is calculated"
+                  className="p-0.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex-shrink-0 transition"
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+                <div className="truncate text-[10px] sm:text-[11px]">
+                  <strong className="text-slate-900 dark:text-white font-bold">Fair Value:</strong> Expected price by mileage. 
+                  <span className="ml-1 text-emerald-700 dark:text-emerald-400 font-bold">🟢 Deal (&gt;8% below)</span> • 
+                  <span className="text-sky-700 dark:text-sky-400 font-bold">🔵 Fair (±8%)</span> • 
+                  <span className="text-amber-700 dark:text-amber-400 font-bold">🟡 Above (&gt;8% above)</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFairValueModal(true)}
+                className="text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-200 flex items-center space-x-0.5 flex-shrink-0 underline"
+              >
+                <span>Details</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </button>
+            </div>
+
             {/* Top Toolbar: View Switcher (Chart vs Top Deals) + Quick Deal Quality Filters */}
             <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-[#1C3B66]/60">
               
@@ -615,17 +677,6 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                   </div>
                 )}
 
-                {/* How Fair Value is Calculated Button */}
-                <button
-                  type="button"
-                  onClick={() => setShowFairValueModal(true)}
-                  className="flex items-center space-x-1 px-2 py-1 rounded-lg text-[10px] font-bold text-sky-700 dark:text-sky-300 hover:text-sky-900 dark:hover:text-white bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 transition shadow-sm"
-                  title="Learn how fair market prices and deal ratings are calculated"
-                >
-                  <HelpCircle className="w-3 h-3 text-sky-600 dark:text-sky-400" />
-                  <span>How Fair Value is Calculated</span>
-                </button>
-
                 {/* Sub-view toggle: Chart vs Top Deals List */}
                 <div className="flex items-center bg-slate-100 dark:bg-[#061021] p-0.5 rounded-lg border border-slate-200 dark:border-[#1A3B6B]">
                   <button
@@ -653,6 +704,64 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
               </div>
 
             </div>
+
+            {/* Quick Mileage Filter Chips & Pan Controls (For Scatter View) */}
+            {scatterSubView === 'chart' && (
+              <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2 px-1 text-[10px]">
+                <div className="flex items-center space-x-1 overflow-x-auto no-scrollbar py-0.5">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 mr-1 hidden sm:inline">Mileage:</span>
+                  {[
+                    { id: 'all', label: 'All Mileage' },
+                    { id: '0-30k', label: '0–30k km' },
+                    { id: '30-70k', label: '30–70k km' },
+                    { id: '70-120k', label: '70–120k km' },
+                    { id: '120k+', label: '120k+ km' },
+                  ].map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => handleSelectBracket(b.id)}
+                      className={`px-2 py-0.5 rounded-lg font-bold transition whitespace-nowrap ${
+                        selectedMileagePreset === b.id
+                          ? 'bg-[#1D70B8] text-white shadow-sm'
+                          : 'bg-slate-100 dark:bg-[#112646] text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#1A3B6B]'
+                      }`}
+                    >
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Pan Controls when zoomed or bracket selected */}
+                {(zoomFactor > 1 || selectedMileagePreset !== 'all') && (
+                  <div className="flex items-center space-x-1 bg-slate-100 dark:bg-[#061021] p-0.5 rounded-lg border border-slate-200 dark:border-[#1A3B6B]">
+                    <button
+                      type="button"
+                      onClick={handlePanLeft}
+                      disabled={dynamicMileageDomain[0] <= 0}
+                      title="Pan Left (Lower Mileage)"
+                      className="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#16345C] disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-0.5"
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                      <span className="hidden xs:inline">Pan Left</span>
+                    </button>
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 px-1 font-semibold">
+                      {(dynamicMileageDomain[0] / 1000).toFixed(0)}k–{(dynamicMileageDomain[1] / 1000).toFixed(0)}k
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handlePanRight}
+                      disabled={dynamicMileageDomain[1] >= fullMaxMileage}
+                      title="Pan Right (Higher Mileage)"
+                      className="px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#16345C] disabled:opacity-30 disabled:pointer-events-none transition flex items-center space-x-0.5"
+                    >
+                      <span className="hidden xs:inline">Pan Right</span>
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* View A: Interactive Top Deals List (100% Mobile Usable!) */}
             {scatterSubView === 'top_deals' ? (
@@ -741,45 +850,44 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                 )}
               </div>
             ) : (
-              /* View B: Dynamic Scaling Scatter Plot (Points spread vertically & horizontally) */
+              /* View B: Dynamic Scaling Scatter Plot (Horizontal Mileage Zoom only, Fixed Price Y-Axis) */
               <>
                 <div
                   className="w-full h-[270px] sm:h-[310px] md:h-[340px] relative select-none"
+                  style={{ touchAction: 'pan-y' }}
                   onTouchStart={handleChartTouchStart}
-                  onTouchMove={handleChartTouchMove}
                   onTouchEnd={handleChartTouchEnd}
-                  onWheel={handleChartWheel}
                 >
-                  {/* Floating On-Chart Touch Zoom Toolbar */}
+                  {/* Floating On-Chart Horizontal Zoom Toolbar */}
                   <div className="absolute top-2 right-2 z-20 flex items-center bg-white/95 dark:bg-[#08162B]/95 backdrop-blur-md border border-slate-300 dark:border-[#1C3B66] rounded-xl p-1 shadow-lg space-x-1">
                     <button
                       type="button"
-                      onClick={() => handleZoomIn(0.35)}
+                      onClick={handleZoomIn}
                       className="p-1 sm:p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-slate-800 dark:text-white transition shadow-sm font-bold flex items-center justify-center"
-                      title="Zoom In (or pinch outward)"
+                      title="Zoom In Mileage (Horizontal only)"
                     >
                       <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 dark:text-sky-400" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleZoomOut(0.35)}
+                      onClick={handleZoomOut}
                       className="p-1 sm:p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-slate-800 dark:text-white transition shadow-sm font-bold flex items-center justify-center"
-                      title="Zoom Out (or pinch inward)"
+                      title="Zoom Out Mileage"
                     >
                       <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 dark:text-sky-400" />
                     </button>
-                    {(mileageZoomMax || priceZoomMax || zoomFactor !== 1) && (
+                    {(zoomFactor > 1 || selectedMileagePreset !== 'all') && (
                       <button
                         type="button"
                         onClick={handleResetZoom}
                         className="p-1 sm:p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-amber-600 dark:text-amber-400 transition shadow-sm font-bold flex items-center justify-center"
-                        title="Reset Zoom to Full View"
+                        title="Reset to Full Mileage"
                       >
                         <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </button>
                     )}
                     <span className="text-[9px] text-slate-500 dark:text-slate-400 px-1 font-semibold hidden xs:inline">
-                      {zoomFactor > 1 ? `${zoomFactor}x` : 'Pinch to zoom'}
+                      {zoomFactor > 1 ? `${zoomFactor}x` : 'Swipe to pan'}
                     </span>
                   </div>
 

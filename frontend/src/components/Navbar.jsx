@@ -108,17 +108,17 @@ export default function Navbar({
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#0A192F]/95 backdrop-blur-md border-b border-slate-200 dark:border-[#1A3B6B]/80 shadow-sm transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-1.5 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-1 sm:gap-4">
         
         {/* Brand */}
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#991B1B] via-[#C8232C] to-[#E02832] flex items-center justify-center shadow-md shadow-red-900/20">
-            <Car className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+        <div className="flex items-center space-x-1.5 sm:space-x-3 flex-shrink-0">
+          <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#991B1B] via-[#C8232C] to-[#E02832] flex items-center justify-center shadow-md shadow-red-900/20 flex-shrink-0">
+            <Car className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <div className="flex items-center space-x-1 sm:space-x-1.5">
-              <span className="font-black text-sm sm:text-lg text-slate-900 dark:text-white tracking-tight">PakWheels</span>
-              <span className="text-[9px] sm:text-xs px-1.5 py-0.5 rounded-full bg-[#C8232C]/10 dark:bg-[#C8232C]/20 text-[#C8232C] dark:text-red-400 font-bold border border-[#C8232C]/30 dark:border-[#C8232C]/40">
+            <div className="flex items-center space-x-1">
+              <span className="font-black text-xs sm:text-lg text-slate-900 dark:text-white tracking-tight">PakWheels</span>
+              <span className="text-[8px] sm:text-xs px-1 sm:px-1.5 py-0.5 rounded-full bg-[#C8232C]/10 dark:bg-[#C8232C]/20 text-[#C8232C] dark:text-red-400 font-bold border border-[#C8232C]/30 dark:border-[#C8232C]/40">
                 Insights
               </span>
             </div>
@@ -127,34 +127,36 @@ export default function Navbar({
         </div>
 
         {/* Center Navigation Tabs (Dashboard vs Compare) */}
-        <nav className="flex items-center bg-slate-100 dark:bg-[#061021]/80 p-0.5 sm:p-1 rounded-xl border border-slate-200 dark:border-[#1A3B6B]/60 shadow-inner">
+        <nav className="flex items-center bg-slate-100 dark:bg-[#061021]/80 p-0.5 sm:p-1 rounded-xl border border-slate-200 dark:border-[#1A3B6B]/60 shadow-inner flex-shrink-0">
           <button
             onClick={() => setActiveNavTab('dashboard')}
-            className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            title="Market Dashboard"
+            className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition ${
               activeNavTab === 'dashboard'
                 ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md shadow-red-900/25'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>Dashboard</span>
+            <BarChart3 className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="hidden min-[400px]:inline">Dashboard</span>
           </button>
 
           <button
             onClick={() => setActiveNavTab('compare')}
-            className={`flex items-center space-x-1 sm:space-x-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition ${
+            title="Vehicle Compare"
+            className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold transition ${
               activeNavTab === 'compare'
                 ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md shadow-red-900/25'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
-            <Scale className="w-3.5 h-3.5" />
-            <span>Compare</span>
+            <Scale className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="hidden min-[400px]:inline">Compare</span>
           </button>
         </nav>
 
         {/* Right stats, Theme Toggle & DB actions */}
-        <div className="flex items-center space-x-1 sm:space-x-2.5">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
           
           {/* Makes / Models Count */}
           <div className="hidden lg:flex items-center space-x-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-[#0F2444] px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-[#1C3B66]">
@@ -166,12 +168,12 @@ export default function Navbar({
           <button
             onClick={toggleTheme}
             title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
-            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 dark:border-[#1C3B66] bg-slate-100 hover:bg-slate-200 dark:bg-[#0F2444] dark:hover:bg-[#16345C] text-slate-700 dark:text-amber-400 transition flex items-center space-x-1 shadow-sm"
+            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 dark:border-[#1C3B66] bg-slate-100 hover:bg-slate-200 dark:bg-[#0F2444] dark:hover:bg-[#16345C] text-slate-700 dark:text-amber-400 transition flex items-center justify-center space-x-1 shadow-sm flex-shrink-0"
           >
             {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 flex-shrink-0" />
             ) : (
-              <Moon className="w-4 h-4 text-slate-700" />
+              <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-700 flex-shrink-0" />
             )}
             <span className="hidden md:inline text-xs font-bold">
               {theme === 'dark' ? 'Light' : 'Dark'}
@@ -179,15 +181,15 @@ export default function Navbar({
           </button>
 
           {/* Database Backup & Restore Dropdown */}
-          <div className="relative" ref={dbMenuRef}>
+          <div className="relative flex-shrink-0" ref={dbMenuRef}>
             <button
               onClick={() => setShowDbMenu(!showDbMenu)}
-              className="flex items-center space-x-1 text-xs text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-[#0F2444] dark:hover:bg-[#16345C] px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#1C3B66] transition shadow-sm"
+              className="flex items-center space-x-1 text-xs text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-[#0F2444] dark:hover:bg-[#16345C] px-2 sm:px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-[#1C3B66] transition shadow-sm flex-shrink-0"
               title="Database Backup & Sync"
             >
-              <Database className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <Database className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
               <span className="hidden sm:inline font-semibold">DB</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
+              <ChevronDown className="w-3 h-3 text-slate-400 flex-shrink-0" />
             </button>
 
             {showDbMenu && (

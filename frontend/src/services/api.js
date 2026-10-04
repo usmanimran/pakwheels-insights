@@ -60,6 +60,18 @@ export async function fetchScanStatus(params = {}) {
   return res.json();
 }
 
+export async function fetchSnapshots(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, val]) => {
+    if (val !== undefined && val !== null && val !== '') {
+      query.append(key, val);
+    }
+  });
+  const res = await fetch(`${API_BASE}/snapshots?${query.toString()}`);
+  if (!res.ok) throw new Error('Failed to fetch snapshots');
+  return res.json();
+}
+
 export async function fetchCompare(params = {}) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, val]) => {
