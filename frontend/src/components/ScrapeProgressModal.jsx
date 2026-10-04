@@ -8,8 +8,8 @@ export default function ScrapeProgressModal({ progress, onClose }) {
   const isError = progress.status === 'error';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-pw-navy-850 border border-pw-navy-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-pw-navy-850 border border-slate-200 dark:border-pw-navy-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         
         {/* Glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-pw-red-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -18,7 +18,7 @@ export default function ScrapeProgressModal({ progress, onClose }) {
         {(isDone || isError) && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg bg-pw-navy-800 border border-pw-navy-700 transition"
+            className="absolute top-4 right-4 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg bg-slate-100 dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -28,24 +28,24 @@ export default function ScrapeProgressModal({ progress, onClose }) {
         <div className="flex items-center space-x-3 mb-5">
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
             isDone
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+              ? 'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
               : isError
-              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-              : 'bg-pw-red-500/20 text-pw-red-400 border border-pw-red-500/30'
+              ? 'bg-rose-500/15 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 border border-rose-500/30'
+              : 'bg-pw-red-500/15 dark:bg-pw-red-500/20 text-pw-red-600 dark:text-pw-red-400 border border-pw-red-500/30'
           }`}>
             {isDone ? (
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+              <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             ) : isError ? (
-              <AlertCircle className="w-6 h-6 text-rose-400" />
+              <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
             ) : (
-              <Car className="w-6 h-6 text-pw-red-400 animate-bounce" />
+              <Car className="w-6 h-6 text-pw-red-600 dark:text-pw-red-400 animate-bounce" />
             )}
           </div>
           <div>
-            <h3 className="font-extrabold text-base text-white">
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
               {isDone ? 'Scrape Completed!' : isError ? 'Scraping Failed' : 'Scraping Live PakWheels'}
             </h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               {progress.message || 'Extracting listings & pricing metadata...'}
             </p>
           </div>
@@ -54,13 +54,13 @@ export default function ScrapeProgressModal({ progress, onClose }) {
         {/* Animated Progress Bar */}
         <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-400 font-medium">
+            <span className="text-slate-500 dark:text-slate-400 font-medium">
               {progress.total_pages ? `Page ${progress.current_page || 1} of ${progress.total_pages}` : 'Connecting...'}
             </span>
-            <span className="font-extrabold text-white">{progress.percent || 0}%</span>
+            <span className="font-extrabold text-slate-900 dark:text-white">{progress.percent || 0}%</span>
           </div>
 
-          <div className="h-3 w-full bg-pw-navy-900 rounded-full overflow-hidden p-0.5 border border-pw-navy-700">
+          <div className="h-3 w-full bg-slate-100 dark:bg-pw-navy-900 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-pw-navy-700">
             <div
               className={`h-full rounded-full transition-all duration-300 ease-out ${
                 isDone
@@ -73,15 +73,15 @@ export default function ScrapeProgressModal({ progress, onClose }) {
         </div>
 
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 gap-3 bg-pw-navy-800/80 p-3 rounded-2xl border border-pw-navy-700 text-center mb-5">
+        <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-pw-navy-800/80 p-3 rounded-2xl border border-slate-200 dark:border-pw-navy-700 text-center mb-5">
           <div>
-            <span className="text-[11px] text-slate-400 block">Listings Scraped</span>
-            <span className="text-lg font-black text-white">{progress.count || 0}</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Listings Scraped</span>
+            <span className="text-lg font-black text-slate-900 dark:text-white">{progress.count || 0}</span>
           </div>
           <div>
-            <span className="text-[11px] text-slate-400 block">Status</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Status</span>
             <span className={`text-xs font-bold uppercase ${
-              isDone ? 'text-emerald-400' : isError ? 'text-rose-400' : 'text-amber-400 animate-pulse'
+              isDone ? 'text-emerald-600 dark:text-emerald-400' : isError ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400 animate-pulse'
             }`}>
               {isDone ? 'Ready' : isError ? 'Error' : 'In Progress'}
             </span>

@@ -16,7 +16,9 @@ import {
   Legend
 } from 'recharts';
 
-export default function ComparePage({ catalog }) {
+export default function ComparePage({ catalog, theme = 'dark' }) {
+  const isDark = theme === 'dark';
+
   // Segment / Vehicle A State
   const [makeA, setMakeA] = useState('All Makes');
   const [modelA, setModelA] = useState('All Models');
@@ -195,19 +197,19 @@ export default function ComparePage({ catalog }) {
     <div className="space-y-6 animate-in fade-in duration-300">
       
       {/* Title Banner & Presets */}
-      <div className="bg-gradient-to-r from-pw-navy-900 via-pw-navy-800 to-pw-navy-900 border border-pw-navy-700 rounded-3xl p-5 sm:p-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-white via-slate-50 to-white dark:from-pw-navy-900 dark:via-pw-navy-800 dark:to-pw-navy-900 border border-slate-200 dark:border-pw-navy-700 rounded-3xl p-5 sm:p-6 shadow-sm dark:shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-pw-red-600/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="flex items-center space-x-2 text-pw-red-400 text-xs font-bold uppercase tracking-wider mb-1">
+            <div className="flex items-center space-x-2 text-pw-red-600 dark:text-pw-red-400 text-xs font-bold uppercase tracking-wider mb-1">
               <Scale className="w-4 h-4" />
               <span>Head-to-Head Market & Segment Benchmark</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               Compare Markets, Year Eras, or Vehicles
             </h2>
-            <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
               Compare the entire used car market across different year brackets (e.g. 2015–2019 vs 2020–2025), compare whole cities, makes, or specific car trims side-by-side.
             </p>
           </div>
@@ -232,37 +234,37 @@ export default function ComparePage({ catalog }) {
         </div>
 
         {/* Quick Presets Bar with horizontal touch scroll */}
-        <div className="mt-5 pt-4 border-t border-pw-navy-700 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 relative z-10 text-xs">
-          <span className="text-slate-400 font-semibold flex items-center space-x-1 mr-1 flex-shrink-0">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="mt-5 pt-4 border-t border-slate-200 dark:border-pw-navy-700 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 relative z-10 text-xs">
+          <span className="text-slate-500 dark:text-slate-400 font-semibold flex items-center space-x-1 mr-1 flex-shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
             <span>Market Presets:</span>
           </span>
           <button
             onClick={() => applyPreset('eras')}
-            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-pw-navy-850 hover:bg-pw-navy-700 active:scale-95 text-slate-200 border border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
+            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-pw-navy-850 hover:bg-slate-200 dark:hover:bg-pw-navy-700 active:scale-95 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
           >
-            <Calendar className="w-3.5 h-3.5 text-pw-blue-400" />
+            <Calendar className="w-3.5 h-3.5 text-pw-blue-600 dark:text-pw-blue-400" />
             <span>Whole Market (2015–19 vs 2020–25)</span>
           </button>
           <button
             onClick={() => applyPreset('cities')}
-            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-pw-navy-850 hover:bg-pw-navy-700 active:scale-95 text-slate-200 border border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
+            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-pw-navy-850 hover:bg-slate-200 dark:hover:bg-pw-navy-700 active:scale-95 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
           >
-            <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+            <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             <span>Whole Market (Lahore vs Karachi)</span>
           </button>
           <button
             onClick={() => applyPreset('brands')}
-            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-pw-navy-850 hover:bg-pw-navy-700 active:scale-95 text-slate-200 border border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
+            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-pw-navy-850 hover:bg-slate-200 dark:hover:bg-pw-navy-700 active:scale-95 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
           >
-            <CarFront className="w-3.5 h-3.5 text-sky-400" />
+            <CarFront className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
             <span>Brand Rivalry (Toyota vs Honda)</span>
           </button>
           <button
             onClick={() => applyPreset('alto')}
-            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-pw-navy-850 hover:bg-pw-navy-700 active:scale-95 text-slate-200 border border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
+            className="flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-pw-navy-850 hover:bg-slate-200 dark:hover:bg-pw-navy-700 active:scale-95 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-pw-navy-700 font-medium transition flex items-center space-x-1.5"
           >
-            <Sliders className="w-3.5 h-3.5 text-pw-red-400" />
+            <Sliders className="w-3.5 h-3.5 text-pw-red-600 dark:text-pw-red-400" />
             <span>Alto Trims (VXL AGS vs VXR)</span>
           </button>
         </div>
@@ -272,13 +274,13 @@ export default function ComparePage({ catalog }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
         
         {/* Config A - PakWheels Blue */}
-        <div className="bg-pw-navy-800 border border-pw-blue-500/40 rounded-3xl p-5 shadow-xl relative overflow-hidden">
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-pw-navy-700">
-            <span className="text-xs font-black text-pw-blue-400 uppercase tracking-wider flex items-center space-x-1.5">
+        <div className="bg-white dark:bg-pw-navy-800 border border-pw-blue-500/30 dark:border-pw-blue-500/40 rounded-3xl p-5 shadow-sm dark:shadow-xl relative overflow-hidden">
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-pw-navy-700">
+            <span className="text-xs font-black text-pw-blue-600 dark:text-pw-blue-400 uppercase tracking-wider flex items-center space-x-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-pw-blue-500" />
               <span>Segment / Option A</span>
             </span>
-            <span className="text-xs text-slate-300 font-semibold truncate max-w-[200px]">
+            <span className="text-xs text-slate-700 dark:text-slate-300 font-semibold truncate max-w-[200px]">
               {makeA === 'All Makes' ? 'Whole Market' : `${makeA} ${modelA}`}
             </span>
           </div>
@@ -286,7 +288,7 @@ export default function ComparePage({ catalog }) {
           <div className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">Make / Scope</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">Make / Scope</label>
                 <select
                   value={makeA}
                   onChange={(e) => {
@@ -296,7 +298,7 @@ export default function ComparePage({ catalog }) {
                       setVariantA('All Variants');
                     }
                   }}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
                 >
                   <option value="All Makes">✓ Whole Market (All Makes)</option>
                   {catalog?.makes?.map((m) => (
@@ -306,7 +308,7 @@ export default function ComparePage({ catalog }) {
               </div>
 
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">Model</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">Model</label>
                 <select
                   value={modelA}
                   disabled={makeA === 'All Makes'}
@@ -314,7 +316,7 @@ export default function ComparePage({ catalog }) {
                     setModelA(e.target.value);
                     setVariantA('All Variants');
                   }}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
                 >
                   <option value="All Models">All Models</option>
                   {modelsForMakeA.map((m) => (
@@ -326,12 +328,12 @@ export default function ComparePage({ catalog }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">Trim / Variant</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">Trim / Variant</label>
                 <select
                   value={variantA}
                   disabled={makeA === 'All Makes' || modelA === 'All Models'}
                   onChange={(e) => setVariantA(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
                 >
                   <option value="All Variants">All Variants</option>
                   {variantsListA.map((v) => (
@@ -341,11 +343,11 @@ export default function ComparePage({ catalog }) {
               </div>
 
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">City / Region</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">City / Region</label>
                 <select
                   value={cityA}
                   onChange={(e) => setCityA(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
                 >
                   <option value="All Pakistan">All Pakistan</option>
                   {catalog?.cities?.map((c) => (
@@ -356,9 +358,9 @@ export default function ComparePage({ catalog }) {
             </div>
 
             {/* Year Range Filter for Side A */}
-            <div className="pt-2 border-t border-pw-navy-700">
-              <label className="text-[11px] text-slate-300 font-medium flex items-center space-x-1 mb-1.5">
-                <Calendar className="w-3.5 h-3.5 text-pw-blue-400" />
+            <div className="pt-2 border-t border-slate-200 dark:border-pw-navy-700">
+              <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium flex items-center space-x-1 mb-1.5">
+                <Calendar className="w-3.5 h-3.5 text-pw-blue-600 dark:text-pw-blue-400" />
                 <span>Model Year Range (Option A)</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -367,35 +369,35 @@ export default function ComparePage({ catalog }) {
                   placeholder="Min Year (e.g. 2015)"
                   value={minYearA}
                   onChange={(e) => setMinYearA(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white placeholder-slate-500 rounded-xl px-3 py-1.5 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-3 py-1.5 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
                 />
                 <input
                   type="number"
                   placeholder="Max Year (e.g. 2019)"
                   value={maxYearA}
                   onChange={(e) => setMaxYearA(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white placeholder-slate-500 rounded-xl px-3 py-1.5 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-3 py-1.5 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-blue-500 focus:outline-none"
                 />
               </div>
               <div className="flex items-center space-x-1.5 mt-2">
                 <button
                   type="button"
                   onClick={() => { setMinYearA('2015'); setMaxYearA('2019'); }}
-                  className="px-2 py-0.5 rounded-lg bg-pw-navy-900 hover:bg-pw-navy-700 text-[10px] text-slate-300 border border-pw-navy-700 transition"
+                  className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-pw-navy-900 hover:bg-slate-200 dark:hover:bg-pw-navy-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-pw-navy-700 transition"
                 >
                   2015–19
                 </button>
                 <button
                   type="button"
                   onClick={() => { setMinYearA('2020'); setMaxYearA('2025'); }}
-                  className="px-2 py-0.5 rounded-lg bg-pw-navy-900 hover:bg-pw-navy-700 text-[10px] text-slate-300 border border-pw-navy-700 transition"
+                  className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-pw-navy-900 hover:bg-slate-200 dark:hover:bg-pw-navy-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-pw-navy-700 transition"
                 >
                   2020–25
                 </button>
                 <button
                   type="button"
                   onClick={() => { setMinYearA(''); setMaxYearA(''); }}
-                  className="px-2 py-0.5 rounded-lg bg-pw-navy-900 hover:bg-pw-navy-700 text-[10px] text-slate-400 border border-pw-navy-700 transition"
+                  className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-pw-navy-900 hover:bg-slate-200 dark:hover:bg-pw-navy-700 text-[10px] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-pw-navy-700 transition"
                 >
                   All Years
                 </button>
@@ -406,13 +408,13 @@ export default function ComparePage({ catalog }) {
         </div>
 
         {/* Config B - PakWheels Red */}
-        <div className="bg-pw-navy-800 border border-pw-red-500/40 rounded-3xl p-5 shadow-xl relative overflow-hidden">
-          <div className="flex items-center justify-between pb-3 mb-4 border-b border-pw-navy-700">
-            <span className="text-xs font-black text-pw-red-400 uppercase tracking-wider flex items-center space-x-1.5">
+        <div className="bg-white dark:bg-pw-navy-800 border border-pw-red-500/30 dark:border-pw-red-500/40 rounded-3xl p-5 shadow-sm dark:shadow-xl relative overflow-hidden">
+          <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-pw-navy-700">
+            <span className="text-xs font-black text-pw-red-600 dark:text-pw-red-400 uppercase tracking-wider flex items-center space-x-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-pw-red-500" />
               <span>Segment / Option B</span>
             </span>
-            <span className="text-xs text-slate-300 font-semibold truncate max-w-[200px]">
+            <span className="text-xs text-slate-700 dark:text-slate-300 font-semibold truncate max-w-[200px]">
               {makeB === 'All Makes' ? 'Whole Market' : `${makeB} ${modelB}`}
             </span>
           </div>
@@ -420,7 +422,7 @@ export default function ComparePage({ catalog }) {
           <div className="space-y-3 text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">Make / Scope</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">Make / Scope</label>
                 <select
                   value={makeB}
                   onChange={(e) => {
@@ -430,7 +432,7 @@ export default function ComparePage({ catalog }) {
                       setVariantB('All Variants');
                     }
                   }}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
                 >
                   <option value="All Makes">✓ Whole Market (All Makes)</option>
                   {catalog?.makes?.map((m) => (
@@ -440,7 +442,7 @@ export default function ComparePage({ catalog }) {
               </div>
 
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">Model</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">Model</label>
                 <select
                   value={modelB}
                   disabled={makeB === 'All Makes'}
@@ -448,7 +450,7 @@ export default function ComparePage({ catalog }) {
                     setModelB(e.target.value);
                     setVariantB('All Variants');
                   }}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
                 >
                   <option value="All Models">All Models</option>
                   {modelsForMakeB.map((m) => (
@@ -460,12 +462,12 @@ export default function ComparePage({ catalog }) {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">Trim / Variant</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">Trim / Variant</label>
                 <select
                   value={variantB}
                   disabled={makeB === 'All Makes' || modelB === 'All Models'}
                   onChange={(e) => setVariantB(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs disabled:opacity-40 focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
                 >
                   <option value="All Variants">All Variants</option>
                   {variantsListB.map((v) => (
@@ -475,11 +477,11 @@ export default function ComparePage({ catalog }) {
               </div>
 
               <div>
-                <label className="text-[11px] text-slate-300 font-medium block mb-1">City / Region</label>
+                <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium block mb-1">City / Region</label>
                 <select
                   value={cityB}
                   onChange={(e) => setCityB(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white rounded-xl px-2.5 py-2 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white rounded-xl px-2.5 py-2 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
                 >
                   <option value="All Pakistan">All Pakistan</option>
                   {catalog?.cities?.map((c) => (
@@ -490,9 +492,9 @@ export default function ComparePage({ catalog }) {
             </div>
 
             {/* Year Range Filter for Side B */}
-            <div className="pt-2 border-t border-pw-navy-700">
-              <label className="text-[11px] text-slate-300 font-medium flex items-center space-x-1 mb-1.5">
-                <Calendar className="w-3.5 h-3.5 text-pw-red-400" />
+            <div className="pt-2 border-t border-slate-200 dark:border-pw-navy-700">
+              <label className="text-[11px] text-slate-600 dark:text-slate-300 font-medium flex items-center space-x-1 mb-1.5">
+                <Calendar className="w-3.5 h-3.5 text-pw-red-600 dark:text-pw-red-400" />
                 <span>Model Year Range (Option B)</span>
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -501,35 +503,35 @@ export default function ComparePage({ catalog }) {
                   placeholder="Min Year (e.g. 2020)"
                   value={minYearB}
                   onChange={(e) => setMinYearB(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white placeholder-slate-500 rounded-xl px-3 py-1.5 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-3 py-1.5 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
                 />
                 <input
                   type="number"
                   placeholder="Max Year (e.g. 2025)"
                   value={maxYearB}
                   onChange={(e) => setMaxYearB(e.target.value)}
-                  className="w-full bg-pw-navy-900 text-white placeholder-slate-500 rounded-xl px-3 py-1.5 border border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-pw-navy-900 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl px-3 py-1.5 border border-slate-200 dark:border-pw-navy-700 text-xs focus:ring-1 focus:ring-pw-red-500 focus:outline-none"
                 />
               </div>
               <div className="flex items-center space-x-1.5 mt-2">
                 <button
                   type="button"
                   onClick={() => { setMinYearB('2015'); setMaxYearB('2019'); }}
-                  className="px-2 py-0.5 rounded-lg bg-pw-navy-900 hover:bg-pw-navy-700 text-[10px] text-slate-300 border border-pw-navy-700 transition"
+                  className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-pw-navy-900 hover:bg-slate-200 dark:hover:bg-pw-navy-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-pw-navy-700 transition"
                 >
                   2015–19
                 </button>
                 <button
                   type="button"
                   onClick={() => { setMinYearB('2020'); setMaxYearB('2025'); }}
-                  className="px-2 py-0.5 rounded-lg bg-pw-navy-900 hover:bg-pw-navy-700 text-[10px] text-slate-300 border border-pw-navy-700 transition"
+                  className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-pw-navy-900 hover:bg-slate-200 dark:hover:bg-pw-navy-700 text-[10px] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-pw-navy-700 transition"
                 >
                   2020–25
                 </button>
                 <button
                   type="button"
                   onClick={() => { setMinYearB(''); setMaxYearB(''); }}
-                  className="px-2 py-0.5 rounded-lg bg-pw-navy-900 hover:bg-pw-navy-700 text-[10px] text-slate-400 border border-pw-navy-700 transition"
+                  className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-pw-navy-900 hover:bg-slate-200 dark:hover:bg-pw-navy-700 text-[10px] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-pw-navy-700 transition"
                 >
                   All Years
                 </button>
@@ -544,9 +546,9 @@ export default function ComparePage({ catalog }) {
       {/* Comparison Results Dashboard */}
       {comparisonData && (
         comparisonData.car_a?.analytics?.total_listings === 0 && comparisonData.car_b?.analytics?.total_listings === 0 ? (
-          <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-3xl p-8 text-center text-slate-400 space-y-3 shadow-xl">
-            <p className="text-base font-bold text-white">No listings currently in database for this comparison.</p>
-            <p className="text-xs text-slate-400 max-w-lg mx-auto">
+          <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-3xl p-8 text-center text-slate-500 dark:text-slate-400 space-y-3 shadow-sm dark:shadow-xl">
+            <p className="text-base font-bold text-slate-900 dark:text-white">No listings currently in database for this comparison.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
               Comparing <strong>{comparisonData.car_a?.title}</strong> vs <strong>{comparisonData.car_b?.title}</strong>.
               <br />
               Switch to the <strong>Market Intelligence</strong> tab to fetch live listings from PakWheels, or choose different filters.
@@ -559,16 +561,16 @@ export default function ComparePage({ catalog }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               
               {/* Price Delta */}
-              <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl p-4 shadow-xl">
-                <span className="text-xs text-slate-400 block mb-1">Average Price Difference</span>
+              <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl p-4 shadow-sm dark:shadow-xl">
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Average Price Difference</span>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xl sm:text-2xl font-black text-white">
+                  <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                     {Math.abs(comparisonData.comparison?.price_diff_lacs || 0)} Lacs
                   </span>
                   <span className={`px-2 py-0.5 rounded text-xs font-bold flex items-center space-x-0.5 ${
                     (comparisonData.comparison?.price_diff_pkr || 0) > 0
-                      ? 'bg-rose-500/20 text-rose-400'
-                      : 'bg-emerald-500/20 text-emerald-400'
+                      ? 'bg-rose-500/15 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400'
+                      : 'bg-emerald-500/15 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
                   }`}>
                     {(comparisonData.comparison?.price_diff_pkr || 0) > 0 ? (
                       <><span>Option B is +</span>{comparisonData.comparison?.price_diff_pct}%</>
@@ -577,29 +579,29 @@ export default function ComparePage({ catalog }) {
                     )}
                   </span>
                 </div>
-                <span className="text-[11px] text-slate-400 block mt-1 truncate" title={`${comparisonData.car_a?.analytics?.formatted_avg_price} vs ${comparisonData.car_b?.analytics?.formatted_avg_price}`}>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1 truncate" title={`${comparisonData.car_a?.analytics?.formatted_avg_price} vs ${comparisonData.car_b?.analytics?.formatted_avg_price}`}>
                   {comparisonData.car_a?.analytics?.formatted_avg_price} vs {comparisonData.car_b?.analytics?.formatted_avg_price}
                 </span>
               </div>
 
               {/* Mileage Delta */}
-              <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl p-4 shadow-xl">
-                <span className="text-xs text-slate-400 block mb-1">Average Mileage Difference</span>
-                <div className="text-xl sm:text-2xl font-black text-white">
+              <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl p-4 shadow-sm dark:shadow-xl">
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Average Mileage Difference</span>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                   {Math.abs(comparisonData.comparison?.mileage_diff_km || 0).toLocaleString()} km
                 </div>
-                <span className="text-[11px] text-slate-400 block mt-1">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1">
                   {(comparisonData.comparison?.mileage_diff_km || 0) > 0 ? 'Option B is higher driven' : 'Option A is higher driven'}
                 </span>
               </div>
 
               {/* Market Inventory Ratio */}
-              <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl p-4 shadow-xl">
-                <span className="text-xs text-slate-400 block mb-1">Sample Size Comparison</span>
-                <div className="text-xl sm:text-2xl font-black text-white">
+              <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl p-4 shadow-sm dark:shadow-xl">
+                <span className="text-xs text-slate-500 dark:text-slate-400 block mb-1">Sample Size Comparison</span>
+                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                   {comparisonData.car_a?.analytics?.total_listings || 0} vs {comparisonData.car_b?.analytics?.total_listings || 0} cars
                 </div>
-                <span className="text-[11px] text-slate-400 block mt-1">
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1">
                   Total listings analyzed in each sample
                 </span>
               </div>
@@ -608,20 +610,20 @@ export default function ComparePage({ catalog }) {
 
             {/* Side-by-Side Yearly Comparison Overlay Chart */}
             {comparisonData.comparison?.year_comparison?.length > 0 && (
-              <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-3xl p-4 sm:p-5 shadow-xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-pw-navy-700">
-                  <h3 className="font-extrabold text-sm text-white flex items-center space-x-2">
-                    <TrendingUp className="w-4 h-4 text-pw-red-400" />
+              <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-3xl p-4 sm:p-5 shadow-sm dark:shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200 dark:border-pw-navy-700">
+                  <h3 className="font-extrabold text-sm text-slate-900 dark:text-white flex items-center space-x-2">
+                    <TrendingUp className="w-4 h-4 text-pw-red-600 dark:text-pw-red-400" />
                     <span>Year-by-Year Price Trajectory</span>
                   </h3>
                   <div className="flex items-center space-x-4 text-xs font-semibold">
                     <span className="flex items-center space-x-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-pw-blue inline-block" />
-                      <span className="text-pw-blue-400 truncate max-w-[180px] sm:max-w-[220px]" title={comparisonData.car_a?.title}>{comparisonData.car_a?.title}</span>
+                      <span className="text-pw-blue-600 dark:text-pw-blue-400 truncate max-w-[180px] sm:max-w-[220px]" title={comparisonData.car_a?.title}>{comparisonData.car_a?.title}</span>
                     </span>
                     <span className="flex items-center space-x-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-pw-red-600 inline-block" />
-                      <span className="text-pw-red-400 truncate max-w-[180px] sm:max-w-[220px]" title={comparisonData.car_b?.title}>{comparisonData.car_b?.title}</span>
+                      <span className="text-pw-red-600 dark:text-pw-red-400 truncate max-w-[180px] sm:max-w-[220px]" title={comparisonData.car_b?.title}>{comparisonData.car_b?.title}</span>
                     </span>
                   </div>
                 </div>
@@ -629,15 +631,22 @@ export default function ComparePage({ catalog }) {
                 <div className="h-64 sm:h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={comparisonData.comparison.year_comparison} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#163056" vertical={false} />
-                      <XAxis dataKey="year" stroke="#64748b" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                      <YAxis stroke="#64748b" width={36} tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={(v) => `${v}L`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#163056' : '#e2e8f0'} vertical={false} />
+                      <XAxis dataKey="year" stroke={isDark ? '#64748b' : '#94a3b8'} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10 }} />
+                      <YAxis stroke={isDark ? '#64748b' : '#94a3b8'} width={36} tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10 }} tickFormatter={(v) => `${v}L`} />
                       <Tooltip
                         formatter={(val, name) => [
                           val ? `${val} Lacs` : 'No data',
                           name === 'avg_price_a' ? comparisonData.car_a?.title : comparisonData.car_b?.title
                         ]}
-                        contentStyle={{ backgroundColor: '#0D2342', borderColor: '#1C3B66', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
+                        contentStyle={{
+                          backgroundColor: isDark ? '#0D2342' : '#ffffff',
+                          borderColor: isDark ? '#1C3B66' : '#e2e8f0',
+                          borderRadius: '12px',
+                          color: isDark ? '#fff' : '#0f172a',
+                          fontSize: '12px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
                       />
                       <Bar dataKey="avg_price_a" name="avg_price_a" fill="#1D70B8" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="avg_price_b" name="avg_price_b" fill="#C8232C" radius={[4, 4, 0, 0]} />
@@ -648,22 +657,22 @@ export default function ComparePage({ catalog }) {
             )}
 
             {/* Metric Comparison Table */}
-            <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl">
+            <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl sm:rounded-3xl overflow-hidden shadow-sm dark:shadow-xl">
               <div className="overflow-x-auto no-scrollbar">
                 <table className="w-full text-left text-xs min-w-[500px]">
-                  <thead className="bg-pw-navy-900/90 text-slate-300 font-bold uppercase tracking-wider border-b border-pw-navy-700">
+                  <thead className="bg-slate-50 dark:bg-pw-navy-900/90 text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider border-b border-slate-200 dark:border-pw-navy-700">
                     <tr>
                       <th className="py-3 px-4">Metric</th>
-                      <th className="py-3 px-4 text-pw-blue-400">{comparisonData.car_a?.title}</th>
-                      <th className="py-3 px-4 text-pw-red-400">{comparisonData.car_b?.title}</th>
+                      <th className="py-3 px-4 text-pw-blue-600 dark:text-pw-blue-400">{comparisonData.car_a?.title}</th>
+                      <th className="py-3 px-4 text-pw-red-600 dark:text-pw-red-400">{comparisonData.car_b?.title}</th>
                       <th className="py-3 px-4 text-right">Advantage / Delta</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-pw-navy-700/60 text-slate-300">
-                    <tr className="hover:bg-pw-navy-700/30">
-                      <td className="py-3 px-4 font-semibold text-white">Average Market Price</td>
-                      <td className="py-3 px-4 font-bold text-pw-blue-400">{comparisonData.car_a?.analytics?.formatted_avg_price}</td>
-                      <td className="py-3 px-4 font-bold text-pw-red-400">{comparisonData.car_b?.analytics?.formatted_avg_price}</td>
+                  <tbody className="divide-y divide-slate-100 dark:divide-pw-navy-700/60 text-slate-700 dark:text-slate-300">
+                    <tr className="hover:bg-slate-50 dark:hover:bg-pw-navy-700/30">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">Average Market Price</td>
+                      <td className="py-3 px-4 font-bold text-pw-blue-600 dark:text-pw-blue-400">{comparisonData.car_a?.analytics?.formatted_avg_price}</td>
+                      <td className="py-3 px-4 font-bold text-pw-red-600 dark:text-pw-red-400">{comparisonData.car_b?.analytics?.formatted_avg_price}</td>
                       <td className="py-3 px-4 text-right font-semibold">
                         {comparisonData.comparison?.price_diff_lacs > 0
                           ? `Option A is ${Math.abs(comparisonData.comparison.price_diff_lacs)}L cheaper`
@@ -672,37 +681,37 @@ export default function ComparePage({ catalog }) {
                           : 'Even'}
                       </td>
                     </tr>
-                    <tr className="hover:bg-pw-navy-700/30">
-                      <td className="py-3 px-4 font-semibold text-white">Median Price</td>
+                    <tr className="hover:bg-slate-50 dark:hover:bg-pw-navy-700/30">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">Median Price</td>
                       <td className="py-3 px-4">{comparisonData.car_a?.analytics?.formatted_median_price}</td>
                       <td className="py-3 px-4">{comparisonData.car_b?.analytics?.formatted_median_price}</td>
-                      <td className="py-3 px-4 text-right text-slate-400">Typical market baseline</td>
+                      <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">Typical market baseline</td>
                     </tr>
-                    <tr className="hover:bg-pw-navy-700/30">
-                      <td className="py-3 px-4 font-semibold text-white">Lowest Entry Price</td>
+                    <tr className="hover:bg-slate-50 dark:hover:bg-pw-navy-700/30">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">Lowest Entry Price</td>
                       <td className="py-3 px-4">{comparisonData.car_a?.analytics?.formatted_min_price}</td>
                       <td className="py-3 px-4">{comparisonData.car_b?.analytics?.formatted_min_price}</td>
-                      <td className="py-3 px-4 text-right text-slate-400">Minimum budget required</td>
+                      <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">Minimum budget required</td>
                     </tr>
-                    <tr className="hover:bg-pw-navy-700/30">
-                      <td className="py-3 px-4 font-semibold text-white">Highest Price (Top Tier)</td>
+                    <tr className="hover:bg-slate-50 dark:hover:bg-pw-navy-700/30">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">Highest Price (Top Tier)</td>
                       <td className="py-3 px-4">{comparisonData.car_a?.analytics?.formatted_max_price}</td>
                       <td className="py-3 px-4">{comparisonData.car_b?.analytics?.formatted_max_price}</td>
-                      <td className="py-3 px-4 text-right text-slate-400">Top-end / brand new</td>
+                      <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">Top-end / brand new</td>
                     </tr>
-                    <tr className="hover:bg-pw-navy-700/30">
-                      <td className="py-3 px-4 font-semibold text-white">Average Mileage</td>
+                    <tr className="hover:bg-slate-50 dark:hover:bg-pw-navy-700/30">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">Average Mileage</td>
                       <td className="py-3 px-4">{comparisonData.car_a?.analytics?.avg_mileage?.toLocaleString()} km</td>
                       <td className="py-3 px-4">{comparisonData.car_b?.analytics?.avg_mileage?.toLocaleString()} km</td>
-                      <td className="py-3 px-4 text-right text-slate-400">
+                      <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">
                         {Math.abs(comparisonData.comparison?.mileage_diff_km || 0).toLocaleString()} km difference
                       </td>
                     </tr>
-                    <tr className="hover:bg-pw-navy-700/30">
-                      <td className="py-3 px-4 font-semibold text-white">Total Sample Size</td>
-                      <td className="py-3 px-4 font-bold text-pw-blue-400">{comparisonData.car_a?.analytics?.total_listings || 0} listings</td>
-                      <td className="py-3 px-4 font-bold text-pw-red-400">{comparisonData.car_b?.analytics?.total_listings || 0} listings</td>
-                      <td className="py-3 px-4 text-right text-slate-400">Market availability</td>
+                    <tr className="hover:bg-slate-50 dark:hover:bg-pw-navy-700/30">
+                      <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">Total Sample Size</td>
+                      <td className="py-3 px-4 font-bold text-pw-blue-600 dark:text-pw-blue-400">{comparisonData.car_a?.analytics?.total_listings || 0} listings</td>
+                      <td className="py-3 px-4 font-bold text-pw-red-600 dark:text-pw-red-400">{comparisonData.car_b?.analytics?.total_listings || 0} listings</td>
+                      <td className="py-3 px-4 text-right text-slate-500 dark:text-slate-400">Market availability</td>
                     </tr>
                   </tbody>
                 </table>

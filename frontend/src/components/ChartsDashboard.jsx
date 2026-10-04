@@ -17,7 +17,8 @@ import {
 } from 'recharts';
 import {
   TrendingUp, ScatterChart as ScatterIcon, Layers, PieChart as PieIcon,
-  BarChart2, ExternalLink, ZoomIn, ZoomOut, RotateCcw, Calendar, Check
+  BarChart2, ExternalLink, ZoomIn, ZoomOut, RotateCcw, Calendar, Check,
+  Award, Sparkles
 } from 'lucide-react';
 
 // Custom Tooltip for Price vs Model Year
@@ -25,16 +26,16 @@ const YearTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-[#0D2342] border border-[#1C3B66] p-2.5 sm:p-3 rounded-xl shadow-2xl text-xs space-y-1 backdrop-blur-md">
-        <p className="font-black text-white text-xs sm:text-sm mb-0.5">{label} Model</p>
-        <p className="text-slate-300">
-          Average: <strong className="text-sky-400 font-bold">{data.avg_price_lacs} Lacs</strong>
+      <div className="bg-white/95 dark:bg-[#0D2342]/95 border border-slate-200 dark:border-[#1C3B66] p-2.5 sm:p-3 rounded-xl shadow-2xl text-xs space-y-1 backdrop-blur-md">
+        <p className="font-black text-slate-900 dark:text-white text-xs sm:text-sm mb-0.5">{label} Model</p>
+        <p className="text-slate-600 dark:text-slate-300">
+          Average: <strong className="text-sky-600 dark:text-sky-400 font-bold">{data.avg_price_lacs} Lacs</strong>
         </p>
-        <p className="text-slate-400 text-[11px]">
+        <p className="text-slate-500 dark:text-slate-400 text-[11px]">
           Range: {data.min_price_lacs} - {data.max_price_lacs} Lacs
         </p>
-        <p className="text-slate-400 text-[11px]">
-          Inventory: <span className="text-white font-bold">{data.count} cars</span>
+        <p className="text-slate-500 dark:text-slate-400 text-[11px]">
+          Inventory: <span className="text-slate-900 dark:text-white font-bold">{data.count} cars</span>
         </p>
       </div>
     );
@@ -47,30 +48,30 @@ const ScatterTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-[#0D2342]/95 border border-[#1C3B66] p-3 rounded-xl shadow-2xl text-xs space-y-1 max-w-xs backdrop-blur-md">
+      <div className="bg-white/95 dark:bg-[#0D2342]/95 border border-slate-200 dark:border-[#1C3B66] p-3 rounded-xl shadow-2xl text-xs space-y-1 max-w-xs backdrop-blur-md">
         <div className="flex items-center justify-between gap-1.5 mb-1">
-          <span className="font-bold text-white truncate text-[11px] sm:text-xs">{data.title || `${data.year} Model`}</span>
+          <span className="font-bold text-slate-900 dark:text-white truncate text-[11px] sm:text-xs">{data.title || `${data.year} Model`}</span>
           <span
             className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase flex-shrink-0 ${
               data.rating === 'Great Deal'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
                 : data.rating === 'Above Market'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                : 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
+                ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                : 'bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30'
             }`}
           >
             {data.rating}
           </span>
         </div>
-        <p className="text-xs sm:text-sm font-black text-emerald-400">
+        <p className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
           PKR {data.price_lacs} Lacs
-          <span className="text-slate-400 text-[10px] font-normal ml-1">
+          <span className="text-slate-500 dark:text-slate-400 text-[10px] font-normal ml-1">
             ({data.price?.toLocaleString()} PKR)
           </span>
         </p>
-        <div className="text-slate-300 flex items-center justify-between text-[10px] pt-1 border-t border-[#1A3B6B]">
-          <span>Year: <strong className="text-white">{data.year}</strong></span>
-          <span>Mileage: <strong className="text-white">{data.mileage?.toLocaleString()} km</strong></span>
+        <div className="text-slate-600 dark:text-slate-300 flex items-center justify-between text-[10px] pt-1 border-t border-slate-200 dark:border-[#1A3B6B]">
+          <span>Year: <strong className="text-slate-900 dark:text-white">{data.year}</strong></span>
+          <span>Mileage: <strong className="text-slate-900 dark:text-white">{data.mileage?.toLocaleString()} km</strong></span>
         </div>
       </div>
     );
@@ -80,14 +81,19 @@ const ScatterTooltip = ({ active, payload }) => {
 
 const PIE_COLORS = ['#C8232C', '#1D70B8', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#E11D48'];
 
-export default function ChartsDashboard({ analytics, loading }) {
+export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) {
   const [activeTab, setActiveTab] = useState('year'); // 'year', 'scatter', 'variants', 'distribution'
   const [eraFilter, setEraFilter] = useState('all'); // 'all', '2020+', '2015-19', 'pre2015'
 
+  // Deal Finder Rating Filter: 'all', 'great', 'fair', 'above'
+  const [dealRatingFilter, setDealRatingFilter] = useState('all');
+  // Mobile sub-view: 'chart' or 'top_deals'
+  const [scatterSubView, setScatterSubView] = useState('chart');
+
   // Zoom State for Scatter Plot
   const [zoomFactor, setZoomFactor] = useState(1);
-  const [mileageZoomMax, setMileageZoomMax] = useState(150000);
-  const [priceZoomMax, setPriceZoomMax] = useState(50); // In Lacs
+  const [mileageZoomMax, setMileageZoomMax] = useState(null);
+  const [priceZoomMax, setPriceZoomMax] = useState(null);
   const [activeScatterPoint, setActiveScatterPoint] = useState(null);
 
   // Compute filtered year stats for mobile era filter
@@ -99,46 +105,116 @@ export default function ChartsDashboard({ analytics, loading }) {
     return analytics.year_stats;
   }, [analytics?.year_stats, eraFilter]);
 
-  // Compute zoomed scatter points
-  const zoomedScatterPoints = useMemo(() => {
-    if (!analytics?.scatter_points) return [];
-    return analytics.scatter_points.filter(
-      (p) => p.mileage <= mileageZoomMax && p.price_lacs <= priceZoomMax
-    );
-  }, [analytics?.scatter_points, mileageZoomMax, priceZoomMax]);
+  // Compute natural dynamic ranges for scatter plot so dots fill the full chart height
+  const allScatterPoints = useMemo(() => analytics?.scatter_points || [], [analytics?.scatter_points]);
+
+  const rawPrices = useMemo(() => {
+    return allScatterPoints.map((p) => p.price_lacs).filter((p) => p > 0);
+  }, [allScatterPoints]);
+
+  const rawMileages = useMemo(() => {
+    return allScatterPoints.map((p) => p.mileage).filter((m) => m > 0);
+  }, [allScatterPoints]);
+
+  const dynamicPriceDomain = useMemo(() => {
+    if (!rawPrices.length) return [0, 50];
+    const min = Math.min(...rawPrices);
+    const max = Math.max(...rawPrices);
+    // Add small breathing room (5-10%) so dots don't touch the outer axes
+    const padMin = Math.max(0, Math.floor(min * 0.9));
+    const padMax = Math.ceil(max * 1.05);
+    return [padMin, priceZoomMax || padMax];
+  }, [rawPrices, priceZoomMax]);
+
+  const dynamicMileageDomain = useMemo(() => {
+    if (!rawMileages.length) return [0, 150000];
+    const min = Math.min(...rawMileages);
+    const max = Math.max(...rawMileages);
+    const padMin = Math.max(0, Math.floor(min * 0.85));
+    const padMax = Math.ceil(max * 1.05);
+    return [padMin, mileageZoomMax || padMax];
+  }, [rawMileages, mileageZoomMax]);
+
+  // Filter scatter points by rating filter and zoom
+  const displayedScatterPoints = useMemo(() => {
+    return allScatterPoints.filter((p) => {
+      if (dealRatingFilter === 'great' && p.rating !== 'Great Deal') return false;
+      if (dealRatingFilter === 'fair' && p.rating !== 'Fair Price') return false;
+      if (dealRatingFilter === 'above' && p.rating !== 'Above Market') return false;
+      if (mileageZoomMax && p.mileage > mileageZoomMax) return false;
+      if (priceZoomMax && p.price_lacs > priceZoomMax) return false;
+      return true;
+    });
+  }, [allScatterPoints, dealRatingFilter, mileageZoomMax, priceZoomMax]);
+
+  // Count by rating for quick pills
+  const ratingCounts = useMemo(() => {
+    const counts = { all: allScatterPoints.length, great: 0, fair: 0, above: 0 };
+    for (const p of allScatterPoints) {
+      if (p.rating === 'Great Deal') counts.great++;
+      else if (p.rating === 'Fair Price') counts.fair++;
+      else if (p.rating === 'Above Market') counts.above++;
+    }
+    return counts;
+  }, [allScatterPoints]);
+
+  // Top Deals Ranked List (Best bargains for mobile users)
+  const topDealsList = useMemo(() => {
+    const avgPrice = analytics?.avg_price_lacs || 0;
+    return [...allScatterPoints]
+      .filter((p) => p.rating === 'Great Deal' || (avgPrice > 0 && p.price_lacs < avgPrice))
+      .sort((a, b) => {
+        // Prioritize Great Deal, then price
+        if (a.rating === 'Great Deal' && b.rating !== 'Great Deal') return -1;
+        if (b.rating === 'Great Deal' && a.rating !== 'Great Deal') return 1;
+        return a.price_lacs - b.price_lacs;
+      })
+      .slice(0, 10);
+  }, [allScatterPoints, analytics?.avg_price_lacs]);
 
   // Set default active point to the best deal if none selected
   const currentInspectPoint = useMemo(() => {
     if (activeScatterPoint) return activeScatterPoint;
-    if (zoomedScatterPoints.length > 0) {
-      // Find first Great Deal
-      const deal = zoomedScatterPoints.find((p) => p.rating === 'Great Deal');
-      return deal || zoomedScatterPoints[0];
+    if (displayedScatterPoints.length > 0) {
+      const deal = displayedScatterPoints.find((p) => p.rating === 'Great Deal');
+      return deal || displayedScatterPoints[0];
     }
     return null;
-  }, [activeScatterPoint, zoomedScatterPoints]);
+  }, [activeScatterPoint, displayedScatterPoints]);
 
   const handleZoomIn = () => {
     setZoomFactor((prev) => Math.min(prev + 0.5, 3));
-    setMileageZoomMax((prev) => Math.max(Math.round(prev * 0.75), 30000));
-    setPriceZoomMax((prev) => Math.max(Math.round(prev * 0.75), 15));
+    setMileageZoomMax((prev) => {
+      const current = prev || dynamicMileageDomain[1];
+      return Math.max(Math.round(current * 0.75), 30000);
+    });
+    setPriceZoomMax((prev) => {
+      const current = prev || dynamicPriceDomain[1];
+      return Math.max(Math.round(current * 0.75), 10);
+    });
   };
 
   const handleZoomOut = () => {
     setZoomFactor((prev) => Math.max(prev - 0.5, 1));
-    setMileageZoomMax((prev) => Math.min(Math.round(prev * 1.33), 200000));
-    setPriceZoomMax((prev) => Math.min(Math.round(prev * 1.33), 100));
+    setMileageZoomMax((prev) => {
+      const current = prev || dynamicMileageDomain[1];
+      return Math.min(Math.round(current * 1.33), 250000);
+    });
+    setPriceZoomMax((prev) => {
+      const current = prev || dynamicPriceDomain[1];
+      return Math.min(Math.round(current * 1.33), 150);
+    });
   };
 
   const handleResetZoom = () => {
     setZoomFactor(1);
-    setMileageZoomMax(150000);
-    setPriceZoomMax(50);
+    setMileageZoomMax(null);
+    setPriceZoomMax(null);
   };
 
   if (loading || !analytics || analytics.total_listings === 0) {
     return (
-      <div className="bg-[#0D2342] border border-[#1C3B66] rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center text-slate-400">
+      <div className="bg-white dark:bg-[#0D2342] border border-slate-200 dark:border-[#1C3B66] rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center text-slate-500 dark:text-slate-400 shadow-sm transition-colors duration-200">
         <p className="text-xs sm:text-sm font-medium">Fetch or load listings above to view interactive market charts and deal analytics.</p>
       </div>
     );
@@ -150,31 +226,35 @@ export default function ChartsDashboard({ analytics, loading }) {
     }
   };
 
+  const isLight = theme === 'light';
+  const gridStroke = isLight ? '#E2E8F0' : '#16345C';
+  const tickStroke = isLight ? '#64748B' : '#94A3B8';
+
   return (
-    <div className="bg-[#0D2342] border border-[#1C3B66] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xl relative">
+    <div className="bg-white dark:bg-[#0D2342] border border-slate-200 dark:border-[#1C3B66] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-sm dark:shadow-2xl relative transition-colors duration-200">
       
-      {/* Chart Header, Tabs & Zoom Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3.5 border-b border-[#1C3B66]">
+      {/* Chart Header, Tabs & Controls */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3.5 border-b border-slate-200 dark:border-[#1C3B66]">
         <div>
-          <h3 className="font-black text-sm sm:text-base text-white flex items-center space-x-2">
+          <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white flex items-center space-x-2">
             <TrendingUp className="w-4 h-4 text-[#C8232C]" />
             <span>Market Price Dynamics & Analytics</span>
           </h3>
-          <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 font-medium">
+          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
             Analyzing {analytics.total_listings.toLocaleString()} vehicles across years, mileage & trim levels
           </p>
         </div>
 
         {/* Action Controls: Chart Tabs + Zoom Controls */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Segmented Chart View Tabs (Touch-friendly & horizontal scrolling) */}
-          <div className="flex items-center bg-[#061021] p-1 rounded-xl border border-[#1A3B6B] overflow-x-auto no-scrollbar w-full sm:w-auto shadow-inner">
+          {/* Segmented Chart View Tabs */}
+          <div className="flex items-center bg-slate-100 dark:bg-[#061021] p-1 rounded-xl border border-slate-200 dark:border-[#1A3B6B] overflow-x-auto no-scrollbar w-full sm:w-auto shadow-inner">
             <button
               onClick={() => setActiveTab('year')}
               className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                 activeTab === 'year'
                   ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <BarChart2 className="w-3.5 h-3.5" />
@@ -186,7 +266,7 @@ export default function ChartsDashboard({ analytics, loading }) {
               className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                 activeTab === 'scatter'
                   ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <ScatterIcon className="w-3.5 h-3.5" />
@@ -198,7 +278,7 @@ export default function ChartsDashboard({ analytics, loading }) {
               className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                 activeTab === 'variants'
                   ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -210,7 +290,7 @@ export default function ChartsDashboard({ analytics, loading }) {
               className={`flex-1 sm:flex-none flex items-center justify-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                 activeTab === 'distribution'
                   ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md'
-                  : 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
               }`}
             >
               <PieIcon className="w-3.5 h-3.5" />
@@ -219,28 +299,28 @@ export default function ChartsDashboard({ analytics, loading }) {
           </div>
 
           {/* Zoom Toolbar for Scatter Plot */}
-          {activeTab === 'scatter' && (
-            <div className="flex items-center space-x-1 bg-[#061021] p-1 rounded-xl border border-[#1A3B6B] text-xs">
+          {activeTab === 'scatter' && scatterSubView === 'chart' && (
+            <div className="flex items-center space-x-1 bg-slate-100 dark:bg-[#061021] p-1 rounded-xl border border-slate-200 dark:border-[#1A3B6B] text-xs">
               <button
                 onClick={handleZoomIn}
                 title="Zoom In"
-                className="p-1 text-slate-300 hover:text-white hover:bg-[#16345C] rounded-lg transition"
+                className="p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#16345C] rounded-lg transition"
               >
-                <ZoomIn className="w-3.5 h-3.5 text-sky-400" />
+                <ZoomIn className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               </button>
               <button
                 onClick={handleZoomOut}
                 title="Zoom Out"
-                className="p-1 text-slate-300 hover:text-white hover:bg-[#16345C] rounded-lg transition"
+                className="p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#16345C] rounded-lg transition"
               >
-                <ZoomOut className="w-3.5 h-3.5 text-sky-400" />
+                <ZoomOut className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
               </button>
               <button
                 onClick={handleResetZoom}
                 title="Reset Zoom"
-                className="p-1 text-slate-300 hover:text-white hover:bg-[#16345C] rounded-lg transition flex items-center space-x-1"
+                className="p-1 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#16345C] rounded-lg transition flex items-center space-x-1"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                <RotateCcw className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <span className="text-[10px] hidden md:inline">Reset</span>
               </button>
             </div>
@@ -248,15 +328,15 @@ export default function ChartsDashboard({ analytics, loading }) {
         </div>
       </div>
 
-      {/* Chart Views */}
-      <div className={`${activeTab === 'variants' ? 'min-h-[460px] md:h-96' : 'h-72 sm:h-96'} w-full`}>
+      {/* Chart Views Container */}
+      <div className={`${activeTab === 'variants' ? 'min-h-[460px] md:h-96' : activeTab === 'scatter' ? 'min-h-[380px] sm:h-[420px]' : 'h-72 sm:h-96'} w-full`}>
 
         {/* 1. Price by Model Year (Mobile-friendly ticks + Era presets) */}
         {activeTab === 'year' && (
           <div className="w-full h-full flex flex-col">
-            <div className="text-[11px] text-slate-400 mb-2 flex flex-wrap items-center justify-between gap-1.5 px-1">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 flex flex-wrap items-center justify-between gap-1.5 px-1">
               <div className="flex items-center space-x-1 sm:space-x-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-slate-400 font-bold mr-1 hidden sm:inline">Filter Era:</span>
+                <span className="text-slate-600 dark:text-slate-400 font-bold mr-1 hidden sm:inline">Filter Era:</span>
                 {[
                   { id: 'all', label: 'All Years' },
                   { id: '2020+', label: '2020-2025' },
@@ -269,36 +349,36 @@ export default function ChartsDashboard({ analytics, loading }) {
                     className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition whitespace-nowrap ${
                       eraFilter === e.id
                         ? 'bg-[#C8232C] text-white shadow'
-                        : 'bg-[#112646] text-slate-300 hover:text-white border border-[#1A3B6B]'
+                        : 'bg-slate-100 dark:bg-[#112646] text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-[#1A3B6B]'
                     }`}
                   >
                     {e.label}
                   </button>
                 ))}
               </div>
-              <span className="text-slate-400 text-[10px] hidden sm:inline">Bars = Average Price (Lacs)</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[10px] hidden sm:inline">Bars = Average Price (Lacs)</span>
             </div>
 
             <div className="flex-1 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={filteredYearStats} margin={{ top: 10, right: 10, left: -15, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#16345C" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
                   <XAxis
                     dataKey="year"
-                    stroke="#64748b"
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    stroke={tickStroke}
+                    tick={{ fill: tickStroke, fontSize: 10 }}
                     tickLine={false}
                     minTickGap={16}
                     interval="preserveStartEnd"
                   />
                   <YAxis
-                    stroke="#64748b"
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    stroke={tickStroke}
+                    tick={{ fill: tickStroke, fontSize: 10 }}
                     tickLine={false}
-                    width={34}
+                    width={40}
                     tickFormatter={(val) => `${val}L`}
                   />
-                  <Tooltip content={<YearTooltip />} />
+                  <Tooltip content={<YearTooltip theme={theme} />} />
                   <Bar
                     dataKey="avg_price_lacs"
                     name="Average Price (Lacs)"
@@ -318,7 +398,7 @@ export default function ChartsDashboard({ analytics, loading }) {
                     dataKey="year"
                     height={20}
                     stroke="#C8232C"
-                    fill="#08162b"
+                    fill={isLight ? '#F1F5F9' : '#08162b'}
                     tickFormatter={(v) => `${v}`}
                     className="hidden sm:block"
                   />
@@ -328,111 +408,268 @@ export default function ChartsDashboard({ analytics, loading }) {
           </div>
         )}
 
-        {/* 2. Price vs Mileage Scatter Plot (Deal Finder + Tap-to-Inspect Card) */}
+        {/* 2. OVERHAULED DEAL FINDER (Scatter Plot + Top Deals Mode) */}
         {activeTab === 'scatter' && (
           <div className="w-full h-full flex flex-col justify-between">
-            <div className="flex flex-wrap items-center justify-between text-[11px] px-1 mb-1.5 text-slate-300 gap-1.5">
-              <div className="flex items-center space-x-2 sm:space-x-3">
-                <span className="flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-                  <span className="text-emerald-400 font-bold">Great Deal</span>
-                </span>
-                <span className="flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-sky-400 inline-block" />
-                  <span className="text-sky-300">Fair Price</span>
-                </span>
-                <span className="flex items-center space-x-1">
-                  <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
-                  <span className="text-amber-300">Above Avg</span>
-                </span>
+            
+            {/* Top Toolbar: View Switcher (Chart vs Top Deals) + Quick Deal Quality Filters */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-200 dark:border-[#1C3B66]/60">
+              
+              {/* Quick Quality Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <button
+                  onClick={() => setDealRatingFilter('all')}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 flex-shrink-0 ${
+                    dealRatingFilter === 'all'
+                      ? 'bg-slate-800 dark:bg-slate-700 text-white shadow-sm'
+                      : 'bg-slate-100 dark:bg-[#112646] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-[#1A3B6B]'
+                  }`}
+                >
+                  <span>All ({ratingCounts.all})</span>
+                </button>
+
+                <button
+                  onClick={() => setDealRatingFilter('great')}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 flex-shrink-0 ${
+                    dealRatingFilter === 'great'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                  <span>🔥 Great Deals ({ratingCounts.great})</span>
+                </button>
+
+                <button
+                  onClick={() => setDealRatingFilter('fair')}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 flex-shrink-0 ${
+                    dealRatingFilter === 'fair'
+                      ? 'bg-sky-600 text-white shadow-sm'
+                      : 'bg-sky-500/10 text-sky-700 dark:text-sky-300 border border-sky-500/30'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400 inline-block" />
+                  <span>Fair ({ratingCounts.fair})</span>
+                </button>
+
+                <button
+                  onClick={() => setDealRatingFilter('above')}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition flex items-center space-x-1 flex-shrink-0 ${
+                    dealRatingFilter === 'above'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                  <span>Above Avg ({ratingCounts.above})</span>
+                </button>
               </div>
-              <div className="text-[10px] text-slate-400 font-medium">
-                Tap dot to inspect car ({zoomedScatterPoints.length} listings)
+
+              {/* Sub-view toggle: Chart vs Top Deals List */}
+              <div className="flex items-center bg-slate-100 dark:bg-[#061021] p-0.5 rounded-lg border border-slate-200 dark:border-[#1A3B6B]">
+                <button
+                  onClick={() => setScatterSubView('chart')}
+                  className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                    scatterSubView === 'chart'
+                      ? 'bg-white dark:bg-[#112646] text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  📈 Scatter Chart
+                </button>
+                <button
+                  onClick={() => setScatterSubView('top_deals')}
+                  className={`px-2 py-1 rounded text-[10px] font-bold transition flex items-center space-x-1 ${
+                    scatterSubView === 'top_deals'
+                      ? 'bg-emerald-600 text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Award className="w-3 h-3" />
+                  <span>🏆 Top {topDealsList.length} Deals</span>
+                </button>
               </div>
+
             </div>
 
-            <div className="flex-1 w-full min-h-[190px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 10, right: 10, left: -15, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#16345C" />
-                  <XAxis
-                    type="number"
-                    dataKey="mileage"
-                    name="Mileage"
-                    unit=" km"
-                    stroke="#64748b"
-                    domain={[0, mileageZoomMax]}
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
-                  />
-                  <YAxis
-                    type="number"
-                    dataKey="price_lacs"
-                    name="Price"
-                    unit=" Lacs"
-                    stroke="#64748b"
-                    domain={[0, priceZoomMax]}
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                    width={34}
-                    tickFormatter={(v) => `${v}L`}
-                  />
-                  {/* Larger touch range for mobile */}
-                  <ZAxis range={[90, 90]} />
-                  <Tooltip content={<ScatterTooltip />} />
-                  <Scatter
-                    name="Vehicles"
-                    data={zoomedScatterPoints}
-                    onClick={(node) => handleDotClick(node.payload || node)}
-                    cursor="pointer"
-                  >
-                    {zoomedScatterPoints.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.85} />
-                    ))}
-                  </Scatter>
-                </ScatterChart>
-              </ResponsiveContainer>
-            </div>
-
-            {/* Mobile / Desktop Tap-to-Inspect Card */}
-            {currentInspectPoint && (
-              <div className="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-[#112646] border border-[#1C3B66] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-md">
-                <div className="flex items-center space-x-2 truncate">
-                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase flex-shrink-0 ${
-                    currentInspectPoint.rating === 'Great Deal'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : currentInspectPoint.rating === 'Above Market'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                      : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                  }`}>
-                    {currentInspectPoint.rating}
-                  </span>
-                  <div className="truncate">
-                    <p className="font-bold text-white text-xs truncate max-w-xs">{currentInspectPoint.title || `${currentInspectPoint.year} Model`}</p>
-                    <p className="text-[10px] text-slate-400">
-                      {currentInspectPoint.year} Model • {currentInspectPoint.mileage?.toLocaleString()} km
-                    </p>
-                  </div>
+            {/* View A: Interactive Top Deals List (100% Mobile Usable!) */}
+            {scatterSubView === 'top_deals' ? (
+              <div className="flex-1 w-full overflow-y-auto max-h-[310px] sm:max-h-[340px] pr-1 space-y-2">
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium pb-1 flex items-center justify-between">
+                  <span>Vehicles ranked by highest market savings & value:</span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Best Bargains</span>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-[#1A3B6B]">
-                  <div className="text-left sm:text-right">
-                    <span className="text-emerald-400 font-black text-xs sm:text-sm block">PKR {currentInspectPoint.price_lacs} Lacs</span>
-                    <span className="text-[9px] text-slate-400 font-medium">({currentInspectPoint.price?.toLocaleString()} PKR)</span>
+                {topDealsList.length === 0 ? (
+                  <div className="text-center py-8 text-slate-400 text-xs">
+                    No deals match the current filter. Switch back to "All" to inspect the market.
                   </div>
-                  {currentInspectPoint.url && (
-                    <a
-                      href={currentInspectPoint.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C8232C] to-[#A81B23] hover:from-[#E02832] text-white font-bold text-[10px] flex items-center space-x-1 shadow transition flex-shrink-0"
-                    >
-                      <span>View Ad</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  )}
-                </div>
+                ) : (
+                  topDealsList.map((car, idx) => {
+                    const avgLacs = analytics?.avg_price_lacs || 0;
+                    const diffLacs = avgLacs > car.price_lacs ? (avgLacs - car.price_lacs).toFixed(1) : null;
+
+                    return (
+                      <div
+                        key={car.id || idx}
+                        onClick={() => setActiveScatterPoint(car)}
+                        className={`p-3 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 cursor-pointer ${
+                          activeScatterPoint?.id === car.id
+                            ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-500/50'
+                            : 'bg-slate-50 dark:bg-[#112646] hover:bg-slate-100 dark:hover:bg-[#16345C] border-slate-200 dark:border-[#1C3B66]'
+                        }`}
+                      >
+                        <div className="flex items-start space-x-2.5 truncate">
+                          <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 font-black text-xs flex items-center justify-center flex-shrink-0">
+                            #{idx + 1}
+                          </span>
+                          <div className="truncate">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="font-extrabold text-slate-900 dark:text-white text-xs truncate max-w-[200px] sm:max-w-xs">
+                                {car.title || `${car.year} Model`}
+                              </span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                                {car.rating}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              {car.year} Model • {car.mileage?.toLocaleString()} km
+                              {diffLacs && (
+                                <span className="ml-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                                  (~{diffLacs}L below avg)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-3 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-[#1A3B6B]">
+                          <div className="text-left sm:text-right">
+                            <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs sm:text-sm block">
+                              PKR {car.price_lacs} Lacs
+                            </span>
+                            <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">
+                              ({car.price?.toLocaleString()} PKR)
+                            </span>
+                          </div>
+
+                          {car.url ? (
+                            <a
+                              href={car.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-2.5 py-1 rounded-lg bg-[#C8232C] hover:bg-[#A81B23] text-white font-bold text-[10px] flex items-center space-x-1 shadow transition flex-shrink-0"
+                            >
+                              <span>View Ad</span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : (
+                            <button
+                              onClick={() => setActiveScatterPoint(car)}
+                              className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-[10px] font-bold"
+                            >
+                              Inspect
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
+            ) : (
+              /* View B: Dynamic Scaling Scatter Plot (Points spread vertically & horizontally) */
+              <>
+                <div className="flex-1 w-full min-h-[220px] sm:min-h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis
+                        type="number"
+                        dataKey="mileage"
+                        name="Mileage"
+                        stroke={tickStroke}
+                        domain={dynamicMileageDomain}
+                        tick={{ fill: tickStroke, fontSize: 10 }}
+                        tickFormatter={(v) => `${(v / 1000).toFixed(0)}k km`}
+                      />
+                      <YAxis
+                        type="number"
+                        dataKey="price_lacs"
+                        name="Price"
+                        stroke={tickStroke}
+                        domain={dynamicPriceDomain}
+                        tick={{ fill: tickStroke, fontSize: 10 }}
+                        width={42}
+                        tickFormatter={(v) => `${v}L`}
+                      />
+                      {/* Responsive touch size */}
+                      <ZAxis range={[100, 100]} />
+                      <Tooltip content={<ScatterTooltip />} />
+                      <Scatter
+                        name="Vehicles"
+                        data={displayedScatterPoints}
+                        onClick={(node) => handleDotClick(node.payload || node)}
+                        cursor="pointer"
+                      >
+                        {displayedScatterPoints.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color}
+                            fillOpacity={activeScatterPoint?.id === entry.id ? 1 : 0.85}
+                            stroke={activeScatterPoint?.id === entry.id ? '#FFFFFF' : 'none'}
+                            strokeWidth={activeScatterPoint?.id === entry.id ? 2 : 0}
+                          />
+                        ))}
+                      </Scatter>
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Mobile / Desktop Tap-to-Inspect Card */}
+                {currentInspectPoint && (
+                  <div className="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1C3B66] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-md">
+                    <div className="flex items-center space-x-2 truncate">
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase flex-shrink-0 ${
+                        currentInspectPoint.rating === 'Great Deal'
+                          ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
+                          : currentInspectPoint.rating === 'Above Market'
+                          ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40'
+                          : 'bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/40'
+                      }`}>
+                        {currentInspectPoint.rating}
+                      </span>
+                      <div className="truncate">
+                        <p className="font-bold text-slate-900 dark:text-white text-xs truncate max-w-xs">{currentInspectPoint.title || `${currentInspectPoint.year} Model`}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                          {currentInspectPoint.year} Model • {currentInspectPoint.mileage?.toLocaleString()} km
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-2.5 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-200 dark:border-[#1A3B6B]">
+                      <div className="text-left sm:text-right">
+                        <span className="text-emerald-600 dark:text-emerald-400 font-black text-xs sm:text-sm block">PKR {currentInspectPoint.price_lacs} Lacs</span>
+                        <span className="text-[9px] text-slate-500 dark:text-slate-400 font-medium">({currentInspectPoint.price?.toLocaleString()} PKR)</span>
+                      </div>
+                      {currentInspectPoint.url && (
+                        <a
+                          href={currentInspectPoint.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C8232C] to-[#A81B23] hover:from-[#E02832] text-white font-bold text-[10px] flex items-center space-x-1 shadow transition flex-shrink-0"
+                        >
+                          <span>View Ad</span>
+                          <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
+
           </div>
         )}
 
@@ -461,7 +698,12 @@ export default function ChartsDashboard({ analytics, loading }) {
                       `${val} cars (${item.payload.percent_share}%) - Avg: ${item.payload.avg_price_lacs} Lacs`,
                       name
                     ]}
-                    contentStyle={{ backgroundColor: '#0D2342', borderColor: '#1C3B66', borderRadius: '12px', color: '#fff' }}
+                    contentStyle={{
+                      backgroundColor: isLight ? '#FFFFFF' : '#0D2342',
+                      borderColor: isLight ? '#CBD5E1' : '#1C3B66',
+                      borderRadius: '12px',
+                      color: isLight ? '#0F172A' : '#fff'
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -469,16 +711,16 @@ export default function ChartsDashboard({ analytics, loading }) {
 
             {/* List breakdown */}
             <div className="w-full space-y-1.5 overflow-y-auto max-h-60 sm:max-h-72 pr-1 text-xs">
-              <h4 className="font-bold text-slate-300 text-xs mb-1.5">Variant Price & Volume Breakdown:</h4>
+              <h4 className="font-bold text-slate-700 dark:text-slate-300 text-xs mb-1.5">Variant Price & Volume Breakdown:</h4>
               {analytics.variant_stats.map((v, i) => (
-                <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-[#112646] border border-[#1A3B6B]">
+                <div key={i} className="flex items-center justify-between p-2 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1A3B6B]">
                   <div className="flex items-center space-x-2 truncate">
                     <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                    <span className="font-bold text-white text-xs truncate">{v.variant}</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-xs truncate">{v.variant}</span>
                   </div>
                   <div className="text-right flex-shrink-0 ml-2">
-                    <span className="text-sky-400 font-bold text-xs">{v.avg_price_lacs} Lacs</span>
-                    <span className="text-slate-400 text-[10px] ml-1.5">({v.count} cars)</span>
+                    <span className="text-sky-600 dark:text-sky-400 font-bold text-xs">{v.avg_price_lacs} Lacs</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[10px] ml-1.5">({v.count} cars)</span>
                   </div>
                 </div>
               ))}
@@ -489,17 +731,17 @@ export default function ChartsDashboard({ analytics, loading }) {
         {/* 4. Price Bracket Distribution (Compact formatted mobile ticks) */}
         {activeTab === 'distribution' && (
           <div className="w-full h-full flex flex-col">
-            <div className="text-[11px] text-slate-400 mb-1 px-1">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-1 px-1">
               Inventory distribution by price bracket:
             </div>
             <div className="flex-1 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={analytics.price_distribution} margin={{ top: 10, right: 10, left: -15, bottom: 15 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#16345C" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
                   <XAxis
                     dataKey="range"
-                    stroke="#64748b"
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    stroke={tickStroke}
+                    tick={{ fill: tickStroke, fontSize: 10 }}
                     tickLine={false}
                     minTickGap={10}
                     tickFormatter={(val) => {
@@ -508,14 +750,19 @@ export default function ChartsDashboard({ analytics, loading }) {
                     }}
                   />
                   <YAxis
-                    stroke="#64748b"
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    stroke={tickStroke}
+                    tick={{ fill: tickStroke, fontSize: 10 }}
                     tickLine={false}
-                    width={34}
+                    width={40}
                   />
                   <Tooltip
                     formatter={(val) => [`${val} cars`, 'Inventory']}
-                    contentStyle={{ backgroundColor: '#0D2342', borderColor: '#1C3B66', borderRadius: '12px', color: '#fff' }}
+                    contentStyle={{
+                      backgroundColor: isLight ? '#FFFFFF' : '#0D2342',
+                      borderColor: isLight ? '#CBD5E1' : '#1C3B66',
+                      borderRadius: '12px',
+                      color: isLight ? '#0F172A' : '#fff'
+                    }}
                   />
                   <Bar dataKey="count" fill="#10B981" radius={[4, 4, 0, 0]} maxBarSize={45}>
                     {analytics.price_distribution.map((entry, index) => (

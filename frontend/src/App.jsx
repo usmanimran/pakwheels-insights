@@ -24,6 +24,27 @@ export default function App() {
   // Navigation State ('dashboard' or 'compare')
   const [activeNavTab, setActiveNavTab] = useState('dashboard');
 
+  // Theme State ('light' | 'dark')
+  const [theme, setTheme] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pakwheels_theme') || 'dark';
+    }
+    return 'dark';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('pakwheels_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   // Catalog & Search State
   const [catalog, setCatalog] = useState(null);
   const [selectedMake, setSelectedMake] = useState('Suzuki');
@@ -274,7 +295,7 @@ export default function App() {
   const totalPages = Math.ceil((listingsData?.total || 0) / PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-[#08162B] flex flex-col text-slate-100">
+    <div className="min-h-screen bg-[#F4F6F9] dark:bg-[#08162B] flex flex-col text-slate-900 dark:text-slate-100 transition-colors">
       
       {/* Header with Navigation Tabs */}
       <Navbar
@@ -283,6 +304,8 @@ export default function App() {
         onSyncCatalog={handleSyncCatalog}
         isSyncing={isSyncingCatalog}
         totalCatalogMakes={catalog?.makes?.length}
+        theme={theme}
+        toggleTheme={toggleTheme}
       />
 
       {/* Main Content Area */}
@@ -290,7 +313,7 @@ export default function App() {
         
         {/* TAB 1: COMPARE PAGE */}
         {activeNavTab === 'compare' ? (
-          <ComparePage catalog={catalog} />
+          <ComparePage catalog={catalog} theme={theme} />
         ) : (
           /* TAB 2: MARKET DASHBOARD */
           <div className="space-y-5 sm:space-y-6">
@@ -322,7 +345,7 @@ export default function App() {
             <KpiCards analytics={analytics} loading={loadingData} />
 
             {/* Visual Analytics Dashboard (With Graph Zoom Controls) */}
-            <ChartsDashboard analytics={analytics} loading={loadingData} />
+            <ChartsDashboard analytics={analytics} loading={loadingData} theme={theme} />
 
             {/* Listings Section: Filters + Grid/Table Explorer */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
@@ -344,23 +367,23 @@ export default function App() {
               <div className="lg:col-span-3 space-y-4">
                 
                 {/* View Bar & Actions */}
-                <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+                <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm dark:shadow-xl">
                   
                   <div className="flex items-center space-x-2 flex-wrap gap-1.5">
                     <Car className="w-4 h-4 text-pw-red-500" />
-                    <span className="font-extrabold text-xs sm:text-sm text-white">
+                    <span className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white">
                       Listings:
                     </span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-pw-navy-900 text-pw-blue-400 font-bold text-xs border border-pw-navy-700">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-pw-navy-900 text-pw-blue-600 dark:text-pw-blue-400 font-bold text-xs border border-slate-200 dark:border-pw-navy-700">
                       {listingsData?.total?.toLocaleString() || 0} Cars
                     </span>
                     {selectedVariant && selectedVariant !== 'All Variants' && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 font-bold text-xs border border-amber-500/30 truncate max-w-[140px] sm:max-w-[200px]">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-xs border border-amber-500/30 truncate max-w-[140px] sm:max-w-[200px]">
                         {selectedVariant}
                       </span>
                     )}
                     {selectedCities && !selectedCities.includes('All Pakistan') && (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-bold text-xs border border-emerald-500/30 truncate max-w-[140px] sm:max-w-[200px]">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 font-bold text-xs border border-emerald-500/30 truncate max-w-[140px] sm:max-w-[200px]">
                         {selectedCities.join(', ')}
                       </span>
                     )}
@@ -368,11 +391,11 @@ export default function App() {
 
                   {/* View Mode Toggle & CSV Export */}
                   <div className="flex items-center space-x-2 sm:space-x-3">
-                    <div className="flex items-center bg-pw-navy-900 rounded-xl p-1 border border-pw-navy-700">
+                    <div className="flex items-center bg-slate-100 dark:bg-pw-navy-900 rounded-xl p-1 border border-slate-200 dark:border-pw-navy-700">
                       <button
                         onClick={() => setViewMode('cards')}
                         className={`p-1.5 rounded-lg transition ${
-                          viewMode === 'cards' ? 'bg-pw-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                          viewMode === 'cards' ? 'bg-pw-red-600 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                         title="Grid Cards View"
                       >
@@ -381,7 +404,7 @@ export default function App() {
                       <button
                         onClick={() => setViewMode('table')}
                         className={`p-1.5 rounded-lg transition ${
-                          viewMode === 'table' ? 'bg-pw-red-600 text-white shadow' : 'text-slate-400 hover:text-white'
+                          viewMode === 'table' ? 'bg-pw-red-600 text-white shadow' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                         }`}
                         title="Table View"
                       >
@@ -392,7 +415,7 @@ export default function App() {
                     <a
                       href={exportUrl}
                       download
-                      className="flex items-center space-x-1.5 text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 active:scale-95 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl transition"
+                      className="flex items-center space-x-1.5 text-xs font-semibold bg-emerald-500/10 dark:bg-emerald-600/20 hover:bg-emerald-500/20 dark:hover:bg-emerald-600/30 active:scale-95 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl transition"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Export CSV</span>
@@ -403,14 +426,14 @@ export default function App() {
 
                 {/* Listings Content */}
                 {loadingData ? (
-                  <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl p-12 text-center text-slate-400 flex flex-col items-center justify-center space-y-3 shadow-xl">
+                  <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl p-12 text-center text-slate-500 dark:text-slate-400 flex flex-col items-center justify-center space-y-3 shadow-sm dark:shadow-xl">
                     <RefreshCw className="w-6 h-6 animate-spin text-pw-red-500" />
                     <span className="text-sm">Updating market data and filters...</span>
                   </div>
                 ) : listingsData?.items?.length === 0 ? (
-                  <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl p-8 sm:p-12 text-center text-slate-400 space-y-3 shadow-xl">
-                    <p className="text-base font-bold text-white">No listings match the current filters.</p>
-                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl p-8 sm:p-12 text-center text-slate-500 dark:text-slate-400 space-y-3 shadow-sm dark:shadow-xl">
+                    <p className="text-base font-bold text-slate-900 dark:text-white">No listings match the current filters.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
                       Adjust your filters or click below to crawl fresh live listings from PakWheels.
                     </p>
                     <button
@@ -432,28 +455,28 @@ export default function App() {
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="bg-pw-navy-800 border border-pw-navy-700 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between text-xs text-slate-400 shadow-xl">
+                  <div className="bg-white dark:bg-pw-navy-800 border border-slate-200 dark:border-pw-navy-700 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 shadow-sm dark:shadow-xl">
                     <span>
-                      Page <strong className="text-white">{page}</strong> of <strong className="text-white">{totalPages}</strong>
+                      Page <strong className="text-slate-900 dark:text-white">{page}</strong> of <strong className="text-slate-900 dark:text-white">{totalPages}</strong>
                     </span>
 
                     <div className="flex items-center space-x-2">
                       <button
                         disabled={page <= 1}
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
-                        className="p-2 rounded-xl bg-pw-navy-900 text-white border border-pw-navy-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-pw-navy-700 transition"
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-pw-navy-900 text-slate-700 dark:text-white border border-slate-200 dark:border-pw-navy-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-200 dark:hover:bg-pw-navy-700 transition"
                       >
                         <ChevronLeft className="w-4 h-4" />
                       </button>
 
-                      <span className="px-3 py-1 font-bold text-white bg-pw-navy-900 border border-pw-navy-700 rounded-xl">
+                      <span className="px-3 py-1 font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-pw-navy-900 border border-slate-200 dark:border-pw-navy-700 rounded-xl">
                         {page}
                       </span>
 
                       <button
                         disabled={page >= totalPages}
                         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                        className="p-2 rounded-xl bg-pw-navy-900 text-white border border-pw-navy-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-pw-navy-700 transition"
+                        className="p-2 rounded-xl bg-slate-100 dark:bg-pw-navy-900 text-slate-700 dark:text-white border border-slate-200 dark:border-pw-navy-700 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-200 dark:hover:bg-pw-navy-700 transition"
                       >
                         <ChevronRight className="w-4 h-4" />
                       </button>

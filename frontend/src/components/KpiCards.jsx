@@ -58,24 +58,26 @@ export default function KpiCards({ analytics, loading }) {
         return (
           <div
             key={i}
-            className={`bg-[#0D2342] border ${c.borderColor} rounded-2xl p-3 sm:p-4 relative overflow-hidden shadow-lg transition hover:border-[#2563EB]/50 ${
-              c.isHero ? 'col-span-2 lg:col-span-1 bg-gradient-to-br from-[#0D2342] via-[#102A4C] to-[#0A192F]' : 'col-span-1'
+            className={`rounded-2xl p-3 sm:p-4 relative overflow-hidden shadow-sm dark:shadow-lg transition-all duration-200 border ${
+              c.isHero
+                ? 'col-span-2 lg:col-span-1 bg-gradient-to-br from-red-50/60 via-white to-slate-50 dark:from-[#0D2342] dark:via-[#102A4C] dark:to-[#0A192F] border-red-200 dark:border-[#C8232C]/40'
+                : 'col-span-1 bg-white dark:bg-[#0D2342] border-slate-200 dark:border-[#1C3B66]'
             }`}
           >
             <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl ${c.bgGlow} rounded-full blur-xl pointer-events-none`} />
             
             <div className="flex items-center justify-between mb-1 sm:mb-2">
-              <span className="text-[11px] sm:text-xs font-bold text-slate-300 truncate pr-1">{c.title}</span>
-              <div className="p-1 sm:p-1.5 rounded-lg bg-[#112646] border border-[#1A3B6B]/60 flex-shrink-0">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-600 dark:text-slate-300 truncate pr-1">{c.title}</span>
+              <div className="p-1 sm:p-1.5 rounded-lg bg-slate-100 dark:bg-[#112646] border border-slate-200 dark:border-[#1A3B6B]/60 flex-shrink-0">
                 <Icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${c.iconColor}`} />
               </div>
             </div>
 
-            <div className="text-base sm:text-xl lg:text-2xl font-black text-white tracking-tight mb-0.5 truncate">
+            <div className="text-base sm:text-xl lg:text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-0.5 truncate">
               {c.value}
             </div>
 
-            <div className="text-[10px] sm:text-[11px] text-slate-400 truncate font-medium">
+            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 truncate font-medium">
               {c.subtitle}
             </div>
           </div>
