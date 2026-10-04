@@ -10,7 +10,7 @@ export default function FilterSidebar({
   selectedVariant,
   setSelectedVariant
 }) {
-  const [collapsedMobile, setCollapsedMobile] = useState(false);
+  const [collapsedMobile, setCollapsedMobile] = useState(true);
 
   const handleChange = (key, value) => {
     setFilters((prev) => ({
@@ -21,45 +21,67 @@ export default function FilterSidebar({
 
   const isAllVariants = !selectedVariant || selectedVariant === 'All Variants';
 
+  // Count active filters
+  const activeCount = [
+    filters.sort_by && filters.sort_by !== 'newest',
+    filters.min_price_lacs || filters.max_price_lacs,
+    filters.max_mileage,
+    filters.transmission && filters.transmission !== 'all',
+    !isAllVariants
+  ].filter(Boolean).length;
+
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-5">
+    <div className="bg-[#0D2342] border border-[#1C3B66] rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-xl space-y-4">
       
       {/* Title & Reset (with mobile toggle) */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-        <div className="flex items-center space-x-2 text-white font-bold text-sm">
-          <SlidersHorizontal className="w-4 h-4 text-red-400" />
+      <div className="flex items-center justify-between pb-3 border-b border-[#1C3B66]">
+        <button
+          type="button"
+          onClick={() => setCollapsedMobile(!collapsedMobile)}
+          className="flex items-center space-x-2 text-white font-black text-sm text-left lg:cursor-default"
+        >
+          <SlidersHorizontal className="w-4 h-4 text-[#C8232C]" />
           <span>Filters & Sort</span>
-        </div>
+          {activeCount > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full bg-[#C8232C] text-white text-[10px] font-bold">
+              {activeCount}
+            </span>
+          )}
+        </button>
+
         <div className="flex items-center space-x-2">
-          <button
-            onClick={onResetFilters}
-            className="flex items-center space-x-1 text-xs text-slate-400 hover:text-white transition"
-            title="Reset filters"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
-          </button>
+          {activeCount > 0 && (
+            <button
+              onClick={onResetFilters}
+              className="flex items-center space-x-1 text-xs text-slate-400 hover:text-white transition"
+              title="Reset filters"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
+
           <button
             type="button"
             onClick={() => setCollapsedMobile(!collapsedMobile)}
-            className="lg:hidden text-slate-400 hover:text-white p-1"
+            className="lg:hidden text-slate-400 hover:text-white p-1 rounded-lg bg-[#112646] border border-[#1A3B6B]"
           >
             {collapsedMobile ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
-      <div className={`${collapsedMobile ? 'hidden lg:block' : 'block'} space-y-5`}>
+      <div className={`${collapsedMobile ? 'hidden lg:block' : 'block'} space-y-4`}>
         {/* Sort Selector */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center space-x-1">
+          <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center space-x-1">
             <ArrowUpDown className="w-3.5 h-3.5 text-sky-400" />
             <span>Sort Listings By</span>
           </label>
           <select
             value={filters.sort_by || 'newest'}
             onChange={(e) => handleChange('sort_by', e.target.value)}
-            className="w-full bg-slate-800 text-white text-xs rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:border-red-500 transition cursor-pointer"
+            className="w-full bg-[#112646] text-white text-xs rounded-xl px-3 py-2 border border-[#1A3B6B] focus:outline-none focus:border-[#C8232C] transition cursor-pointer shadow-inner"
           >
             <option value="newest">Recently Scraped / Newest</option>
             <option value="price_asc">Price: Lowest First</option>
@@ -73,7 +95,7 @@ export default function FilterSidebar({
 
         {/* Price Range (Lacs) */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center space-x-1">
+          <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center space-x-1">
             <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
             <span>Price Range (in PKR Lacs)</span>
           </label>
@@ -88,7 +110,7 @@ export default function FilterSidebar({
                 handleChange('min_price_lacs', val);
                 handleChange('min_price', val ? Number(val) * 100000 : '');
               }}
-              className="w-full bg-slate-800 text-white text-xs rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[#112646] text-white text-xs rounded-xl px-3 py-2 border border-[#1A3B6B] focus:outline-none focus:border-emerald-500 shadow-inner"
             />
             <input
               type="number"
@@ -100,14 +122,14 @@ export default function FilterSidebar({
                 handleChange('max_price_lacs', val);
                 handleChange('max_price', val ? Number(val) * 100000 : '');
               }}
-              className="w-full bg-slate-800 text-white text-xs rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-[#112646] text-white text-xs rounded-xl px-3 py-2 border border-[#1A3B6B] focus:outline-none focus:border-emerald-500 shadow-inner"
             />
           </div>
         </div>
 
         {/* Mileage Range */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1.5 flex items-center space-x-1">
+          <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center space-x-1">
             <Gauge className="w-3.5 h-3.5 text-amber-400" />
             <span>Max Mileage (km)</span>
           </label>
@@ -117,13 +139,13 @@ export default function FilterSidebar({
             placeholder="Max km (e.g. 80000)"
             value={filters.max_mileage || ''}
             onChange={(e) => handleChange('max_mileage', e.target.value ? Number(e.target.value) : '')}
-            className="w-full bg-slate-800 text-white text-xs rounded-xl px-3 py-2 border border-slate-700 focus:outline-none focus:border-amber-500"
+            className="w-full bg-[#112646] text-white text-xs rounded-xl px-3 py-2 border border-[#1A3B6B] focus:outline-none focus:border-amber-500 shadow-inner"
           />
         </div>
 
         {/* Transmission Pills */}
         <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-2">
+          <label className="block text-xs font-bold text-slate-300 mb-2">
             Transmission Type
           </label>
           <div className="grid grid-cols-3 gap-1.5">
@@ -132,10 +154,10 @@ export default function FilterSidebar({
                 key={t}
                 type="button"
                 onClick={() => handleChange('transmission', t === 'all' ? undefined : t)}
-                className={`py-1.5 px-2 rounded-xl text-xs font-semibold capitalize transition ${
+                className={`py-1.5 px-2 rounded-xl text-xs font-bold capitalize transition ${
                   (filters.transmission || 'all').toLowerCase() === t
-                    ? 'bg-red-500/20 text-red-300 border border-red-500/40 font-bold'
-                    : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/50'
+                    ? 'bg-gradient-to-r from-[#C8232C] to-[#A81B23] text-white shadow-md'
+                    : 'bg-[#112646] text-slate-300 hover:text-white border border-[#1A3B6B]'
                 }`}
               >
                 {t}
@@ -147,22 +169,22 @@ export default function FilterSidebar({
         {/* Variant / Trim Pills */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-semibold text-slate-300">
+            <label className="text-xs font-bold text-slate-300">
               Variant Quick Toggle
             </label>
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-slate-400">
               {isAllVariants ? 'All' : selectedVariant}
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+          <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto no-scrollbar pr-1">
             <button
               type="button"
               onClick={() => setSelectedVariant('All Variants')}
               className={`px-2 py-0.5 rounded-lg text-xs font-semibold flex items-center space-x-1 transition ${
                 isAllVariants
                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
-                  : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/50'
+                  : 'bg-[#112646] text-slate-300 hover:text-white border border-[#1A3B6B]'
               }`}
             >
               {isAllVariants && <Check className="w-3 h-3 text-amber-400" />}
@@ -179,13 +201,13 @@ export default function FilterSidebar({
                   className={`px-2 py-0.5 rounded-lg text-xs transition flex items-center space-x-1 ${
                     isSelected
                       ? 'bg-sky-500/25 text-sky-300 border border-sky-500/50 font-bold'
-                      : 'bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-700/50'
+                      : 'bg-[#112646] text-slate-300 hover:text-white border border-[#1A3B6B]'
                   }`}
                 >
                   {isSelected && <Check className="w-3 h-3 text-sky-400" />}
                   <span>{v.variant}</span>
                   {v.count && (
-                    <span className="text-[10px] text-slate-500 ml-1">({v.count})</span>
+                    <span className="text-[10px] text-slate-400 ml-1 font-semibold">({v.count})</span>
                   )}
                 </button>
               );

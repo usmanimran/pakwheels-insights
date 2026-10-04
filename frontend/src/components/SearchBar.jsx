@@ -99,18 +99,18 @@ export default function SearchBar({
   const isAllCities = selectedCities.length === 0 || selectedCities.includes('All Pakistan');
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-2xl relative">
+    <div className="bg-[#0D2342] border border-[#1C3B66] rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 shadow-2xl relative">
       {/* Background Accent glow */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-red-600/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-80 h-80 bg-red-600/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Row 1: Primary Selectors (Make, Model, Variant, Multi-City, Year Range, Scrape Action) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-end relative z-20">
+      {/* Row 1: Primary Selectors (2 columns on mobile, 6 on desktop) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 items-end relative z-20">
         
         {/* 1. Make */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center space-x-1">
-            <CarFront className="w-3.5 h-3.5 text-red-400" />
-            <span>Make / Brand</span>
+        <div className="col-span-1">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1">
+            <CarFront className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+            <span className="truncate">Make / Brand</span>
           </label>
           <div className="relative">
             <select
@@ -119,7 +119,7 @@ export default function SearchBar({
                 setSelectedMake(e.target.value);
                 setSelectedVariant('All Variants');
               }}
-              className="w-full bg-slate-800 text-white font-medium text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:outline-none focus:border-red-500 transition appearance-none cursor-pointer"
+              className="w-full bg-[#112646] text-white font-medium text-xs rounded-xl px-2.5 sm:px-3 py-2 sm:py-2.5 border border-[#1A3B6B] focus:outline-none focus:border-[#C8232C] transition appearance-none cursor-pointer shadow-inner"
             >
               {catalog?.makes?.map((m) => (
                 <option key={m.make_slug} value={m.make_name}>
@@ -127,15 +127,15 @@ export default function SearchBar({
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
         {/* 2. Model */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center space-x-1">
-            <Filter className="w-3.5 h-3.5 text-sky-400" />
-            <span>Car Model</span>
+        <div className="col-span-1">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1">
+            <Filter className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
+            <span className="truncate">Car Model</span>
           </label>
           <div className="relative">
             <select
@@ -144,7 +144,7 @@ export default function SearchBar({
                 setSelectedModel(e.target.value);
                 setSelectedVariant('All Variants');
               }}
-              className="w-full bg-slate-800 text-white font-medium text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:outline-none focus:border-sky-500 transition appearance-none cursor-pointer"
+              className="w-full bg-[#112646] text-white font-medium text-xs rounded-xl px-2.5 sm:px-3 py-2 sm:py-2.5 border border-[#1A3B6B] focus:outline-none focus:border-sky-500 transition appearance-none cursor-pointer shadow-inner"
             >
               <option value="All Models">All {selectedMake} Models</option>
               {availableModels.map((m) => (
@@ -153,38 +153,38 @@ export default function SearchBar({
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
         {/* 3. Variant */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center space-x-1">
-            <Sliders className="w-3.5 h-3.5 text-amber-400" />
-            <span>Trim / Variant</span>
+        <div className="col-span-1">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1">
+            <Sliders className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+            <span className="truncate">Trim / Variant</span>
           </label>
           <div className="relative">
             <select
               value={selectedVariant}
               onChange={(e) => setSelectedVariant(e.target.value)}
-              className="w-full bg-slate-800 text-white font-medium text-xs rounded-xl px-3 py-2.5 border border-slate-700 focus:outline-none focus:border-amber-500 transition appearance-none cursor-pointer"
+              className="w-full bg-[#112646] text-white font-medium text-xs rounded-xl px-2.5 sm:px-3 py-2 sm:py-2.5 border border-[#1A3B6B] focus:outline-none focus:border-amber-500 transition appearance-none cursor-pointer shadow-inner"
             >
-              <option value="All Variants">✓ All Variants (Entire Model)</option>
+              <option value="All Variants">✓ All Variants</option>
               {availableVariants?.map((v) => (
                 <option key={v.variant} value={v.variant}>
                   {v.variant} {v.count ? `(${v.count})` : ''}
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
         {/* 4. Multi-City Selector */}
-        <div ref={cityDropdownRef} className="relative">
-          <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center justify-between">
-            <span className="flex items-center space-x-1">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+        <div ref={cityDropdownRef} className="col-span-1 relative">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+            <span className="flex items-center space-x-1 truncate">
+              <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
               <span>Cities ({isAllCities ? 'All' : selectedCities.length})</span>
             </span>
           </label>
@@ -192,25 +192,25 @@ export default function SearchBar({
           <button
             type="button"
             onClick={() => setCityDropdownOpen(!cityDropdownOpen)}
-            className="w-full bg-slate-800 text-white text-xs rounded-xl px-3 py-2.5 border border-slate-700 flex items-center justify-between text-left hover:border-emerald-500 transition"
+            className="w-full bg-[#112646] text-white text-xs rounded-xl px-2.5 sm:px-3 py-2 sm:py-2.5 border border-[#1A3B6B] flex items-center justify-between text-left hover:border-emerald-500 transition shadow-inner"
           >
-            <span className="truncate">
+            <span className="truncate font-medium">
               {isAllCities
                 ? 'All Pakistan'
                 : selectedCities.join(', ')}
             </span>
-            <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0 ml-1" />
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 ml-1" />
           </button>
 
           {/* Multi-City Popover Drawer */}
           {cityDropdownOpen && (
-            <div className="absolute left-0 top-full mt-2 w-64 bg-slate-900 border border-slate-700 rounded-2xl p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs font-bold text-white">
+            <div className="absolute left-0 sm:left-auto right-0 top-full mt-2 w-72 max-w-[90vw] bg-[#0D2342] border border-[#1C3B66] rounded-2xl p-3 shadow-2xl z-50 animate-in fade-in zoom-in-95">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#1A3B6B] text-xs font-bold text-white">
                 <span>Select Target Cities</span>
                 <button
                   type="button"
                   onClick={() => setSelectedCities(['All Pakistan'])}
-                  className="text-[10px] text-emerald-400 hover:underline"
+                  className="text-[10px] text-emerald-400 hover:underline font-semibold"
                 >
                   All Pakistan
                 </button>
@@ -222,13 +222,13 @@ export default function SearchBar({
                   return (
                     <label
                       key={c.slug}
-                      className="flex items-center space-x-2 text-xs text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer transition"
+                      className="flex items-center space-x-2 text-xs text-slate-300 hover:text-white p-1.5 rounded-lg hover:bg-[#16345C] cursor-pointer transition"
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
                         onChange={() => handleCityToggle(c.name)}
-                        className="rounded border-slate-700 text-emerald-500 focus:ring-0 bg-slate-800 cursor-pointer"
+                        className="rounded border-[#1A3B6B] text-emerald-500 focus:ring-0 bg-[#0A192F] cursor-pointer"
                       />
                       <span>{c.name}</span>
                     </label>
@@ -239,56 +239,56 @@ export default function SearchBar({
           )}
         </div>
 
-        {/* 5. Top Year Range Filter (Requested by user) */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-400 mb-1 flex items-center space-x-1">
-            <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Year Range</span>
+        {/* 5. Top Year Range Filter */}
+        <div className="col-span-1">
+          <label className="block text-[11px] sm:text-xs font-bold text-slate-300 mb-1 flex items-center space-x-1">
+            <Calendar className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+            <span className="truncate">Year Range</span>
           </label>
           <div className="grid grid-cols-2 gap-1.5">
             <input
               type="number"
-              placeholder="From (2018)"
+              placeholder="From"
               value={minYear || ''}
               onChange={(e) => setMinYear(e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full bg-slate-800 text-white text-xs rounded-xl px-2.5 py-2.5 border border-slate-700 focus:outline-none focus:border-indigo-500 text-center"
+              className="w-full bg-[#112646] text-white text-xs rounded-xl px-1.5 sm:px-2.5 py-2 sm:py-2.5 border border-[#1A3B6B] focus:outline-none focus:border-indigo-500 text-center font-medium shadow-inner"
             />
             <input
               type="number"
-              placeholder="To (2026)"
+              placeholder="To"
               value={maxYear || ''}
               onChange={(e) => setMaxYear(e.target.value ? Number(e.target.value) : undefined)}
-              className="w-full bg-slate-800 text-white text-xs rounded-xl px-2.5 py-2.5 border border-slate-700 focus:outline-none focus:border-indigo-500 text-center"
+              className="w-full bg-[#112646] text-white text-xs rounded-xl px-1.5 sm:px-2.5 py-2 sm:py-2.5 border border-[#1A3B6B] focus:outline-none focus:border-indigo-500 text-center font-medium shadow-inner"
             />
           </div>
         </div>
 
         {/* 6. Scrape Action Button */}
-        <div>
+        <div className="col-span-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-semibold text-slate-400">Scrape Scope</span>
+            <span className="text-[10px] font-bold text-slate-400">Pages</span>
             <div className="flex items-center space-x-1 text-[10px]">
               <button
                 type="button"
                 onClick={() => setScanType('all')}
                 className={`px-1.5 py-0.5 rounded transition ${
                   scanType === 'all'
-                    ? 'bg-red-500/25 text-red-300 font-bold border border-red-500/40'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'bg-[#C8232C]/25 text-red-300 font-bold border border-[#C8232C]/50'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                All Pages
+                All
               </button>
               <button
                 type="button"
                 onClick={() => setScanType('quick')}
                 className={`px-1.5 py-0.5 rounded transition ${
                   scanType === 'quick'
-                    ? 'bg-sky-500/25 text-sky-300 font-bold border border-sky-500/40'
-                    : 'text-slate-500 hover:text-slate-300'
+                    ? 'bg-sky-500/25 text-sky-300 font-bold border border-sky-500/50'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Preview
+                Quick
               </button>
             </div>
           </div>
@@ -296,21 +296,21 @@ export default function SearchBar({
           <button
             onClick={() => onStartScrape()}
             disabled={isScraping}
-            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5 shadow-lg transition duration-200 ${
+            className={`w-full py-2 sm:py-2.5 px-2.5 sm:px-3 rounded-xl font-black text-xs flex items-center justify-center space-x-1.5 shadow-lg transition duration-200 ${
               isScraping
                 ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-600 text-white shadow-red-600/30'
+                : 'bg-gradient-to-r from-[#C8232C] via-[#B71C1C] to-[#991B1B] hover:from-[#E02832] hover:to-[#B71C1C] text-white shadow-red-950/60 active:scale-95'
             }`}
           >
             {isScraping ? (
               <>
                 <Zap className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-                <span>Crawling PakWheels...</span>
+                <span className="truncate">Crawling...</span>
               </>
             ) : (
               <>
-                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300" />
-                <span>Fetch Live Listings</span>
+                <Zap className="w-3.5 h-3.5 text-amber-300 fill-amber-300 flex-shrink-0" />
+                <span className="truncate">Fetch Live</span>
               </>
             )}
           </button>
@@ -318,33 +318,32 @@ export default function SearchBar({
 
       </div>
 
-      {/* Row 2: Cache First Status Ribbon (Requested by user) */}
-      <div className="mt-3.5 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div className="flex items-center space-x-2">
-          <Database className="w-3.5 h-3.5 text-sky-400" />
+      {/* Row 2: Cache First Status Ribbon */}
+      <div className="mt-3 pt-2.5 border-t border-[#1C3B66] flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center space-x-2 text-[11px] sm:text-xs">
+          <Database className="w-3.5 h-3.5 text-sky-400 flex-shrink-0" />
           <span className="text-slate-300">
             {scanStatus?.has_cached_data ? (
               <>
-                Local Database: <strong className="text-white">{scanStatus.count} listings</strong> stored
+                Database: <strong className="text-white font-bold">{scanStatus.count} cars</strong> stored
                 <span className="text-slate-500 mx-1.5">•</span>
-                Last scanned: <span className="text-emerald-400 font-semibold">{scanStatus.time_ago}</span>
+                Last updated: <span className="text-emerald-400 font-bold">{scanStatus.time_ago}</span>
               </>
             ) : (
               <span className="text-slate-400">
-                No local listings stored yet. Click <strong>Fetch Live Listings</strong> to crawl.
+                Click <strong>Fetch Live</strong> to crawl PakWheels listings.
               </span>
             )}
           </span>
         </div>
 
-        {/* Selected City Chips (if multiple selected) */}
+        {/* Selected City Chips */}
         {!isAllCities && selectedCities.length > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] text-slate-500">Active Cities:</span>
             {selectedCities.map((city) => (
               <span
                 key={city}
-                className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md text-[11px] font-medium flex items-center space-x-1"
+                className="bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-bold flex items-center space-x-1"
               >
                 <span>{city}</span>
                 <button
@@ -360,21 +359,21 @@ export default function SearchBar({
         )}
       </div>
 
-      {/* Row 3: Popular Preset Shortcuts */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] text-slate-400 flex items-center space-x-1 mr-1">
+      {/* Row 3: Popular Preset Shortcuts (Smooth Horizontal Scroll on Mobile) */}
+      <div className="mt-2 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <span className="text-[11px] font-bold text-slate-400 flex items-center space-x-1 flex-shrink-0">
           <Sparkles className="w-3 h-3 text-amber-400" />
-          <span>Quick Shortcuts:</span>
+          <span className="hidden sm:inline">Presets:</span>
         </span>
         {PRESETS.map((p, idx) => (
           <button
             key={idx}
             onClick={() => handlePresetClick(p)}
-            className="text-[11px] px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-slate-700/60 transition flex items-center space-x-1"
+            className="text-[11px] px-2.5 py-1 rounded-xl bg-[#112646] hover:bg-[#16345C] text-slate-200 hover:text-white border border-[#1A3B6B] transition flex items-center space-x-1.5 flex-shrink-0 whitespace-nowrap shadow-sm active:scale-95"
           >
-            <span>{p.make} {p.model}</span>
+            <span className="font-semibold">{p.make} {p.model}</span>
             {p.variant !== 'All Variants' && (
-              <span className="text-amber-400 font-medium">({p.variant})</span>
+              <span className="text-amber-400 font-bold">({p.variant})</span>
             )}
             <span className="text-slate-500">•</span>
             <span className="text-slate-400">{p.cities.join(', ')}</span>
