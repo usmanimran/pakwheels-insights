@@ -7,13 +7,26 @@ import httpx
 from bs4 import BeautifulSoup
 from database.db import upsert_listings, record_scan_metadata
 
+try:
+    from curl_cffi.requests import AsyncSession
+    HAS_CURL_CFFI = True
+except ImportError:
+    HAS_CURL_CFFI = False
+
 logger = logging.getLogger(__name__)
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
     "Referer": "https://www.pakwheels.com/",
+    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "same-origin",
+    "Upgrade-Insecure-Requests": "1",
 }
 
 def clean_int(val: Any) -> Optional[int]:
@@ -221,9 +234,9 @@ def parse_listing_element(item, default_make: str, default_model: str, default_c
 def build_search_url(make_slug: str, model_slug: str, city_slug: Optional[str] = None, page: int = 1) -> str:
     """Builds PakWheels search URL with make, model, city, and page."""
     parts = []
-    if make_slug and make_slug.lower() != "all":
+    if make_slug and make_slug.lower() not in ["all", "all-makes", "all makes"]:
         parts.append(f"mk_{make_slug}")
-    if model_slug and model_slug.lower() != "all":
+    if model_slug and model_slug.lower() not in ["all", "all-models", "all models"]:
         parts.append(f"md_{model_slug}")
     if city_slug and city_slug.lower() not in ["all", "pakistan", "all pakistan", ""]:
         parts.append(f"ct_{city_slug}")
@@ -234,20 +247,30 @@ def build_search_url(make_slug: str, model_slug: str, city_slug: Optional[str] =
         base += f"?page={page}"
     return base
 
-async def fetch_page(client: httpx.AsyncClient, url: str) -> Tuple[int, str]:
-    """Fetches a single page with retries."""
+async def fetch_page(client, url: str) -> Tuple[int, str, str]:
+    """Fetches a single page with retries and detailed error reporting."""
+    last_err = ""
     for attempt in range(2):
         try:
-            resp = await client.get(url, timeout=12.0)
+            resp = await client.get(url)
             if resp.status_code == 200:
-                return 200, resp.text
+                if "Just a moment..." in resp.text and ("challenge-platform" in resp.text or "cf-turnstile" in resp.text):
+                    return 403, "", "Cloudflare anti-bot verification challenge triggered"
+                return 200, resp.text, ""
             elif resp.status_code == 404:
-                return 404, ""
+                return 404, "", "Page not found (404)"
+            else:
+                last_err = f"PakWheels returned HTTP {resp.status_code}"
+                if attempt == 0:
+                    await asyncio.sleep(0.8)
+                    continue
+                return resp.status_code, "", last_err
         except Exception as e:
+            last_err = str(e)
             if attempt == 1:
                 logger.warning(f"Failed to fetch {url}: {e}")
             await asyncio.sleep(0.5)
-    return 500, ""
+    return 500, "", last_err or "Request timed out"
 
 async def scrape_listings_generator(
     make_name: str,
@@ -277,12 +300,31 @@ async def scrape_listings_generator(
 
     all_listings: List[Dict[str, Any]] = []
 
-    async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=15.0) as client:
-        status, html = await fetch_page(client, first_url)
+    if HAS_CURL_CFFI:
+        client_ctx = AsyncSession(impersonate="chrome124", headers=HEADERS, timeout=18.0)
+    else:
+        client_ctx = httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=18.0)
+
+    async with client_ctx as client:
+        status, html, err = await fetch_page(client, first_url)
+        if (status != 200 or not html) and HAS_CURL_CFFI:
+            # Fallback to safari impersonation
+            logger.info("Retrying with Safari impersonation...")
+            try:
+                async with AsyncSession(impersonate="safari17_0", headers=HEADERS, timeout=18.0) as safari_client:
+                    s_stat, s_html, s_err = await fetch_page(safari_client, first_url)
+                    if s_stat == 200 and s_html:
+                        client = safari_client
+                        status, html = s_stat, s_html
+                    else:
+                        err = s_err or err
+            except Exception as se:
+                logger.warning(f"Safari retry failed: {se}")
+
         if status != 200 or not html:
             yield {
                 "status": "error",
-                "message": f"Could not connect to PakWheels (HTTP {status})"
+                "message": f"Could not connect to PakWheels (HTTP {status}): {err or 'Connection restricted'}"
             }
             return
 
@@ -333,16 +375,16 @@ async def scrape_listings_generator(
 
         # If more pages exist, fetch with controlled concurrency
         if max_pages > 1:
-            sem = asyncio.Semaphore(6)
+            sem = asyncio.Semaphore(5)
             current_done = 1
 
             async def fetch_and_parse(p: int):
                 nonlocal current_done
                 async with sem:
                     p_url = build_search_url(make_slug, model_slug, city_slug, page=p)
-                    _, p_html = await fetch_page(client, p_url)
+                    p_stat, p_html, _ = await fetch_page(client, p_url)
                     p_listings = []
-                    if p_html:
+                    if p_stat == 200 and p_html:
                         p_soup = BeautifulSoup(p_html, "html.parser")
                         for it in p_soup.select(".classified-listing"):
                             parsed = parse_listing_element(it, make_name, model_name, city_name)

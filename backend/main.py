@@ -6,7 +6,7 @@ import asyncio
 from typing import Optional, List
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Query, HTTPException, Response
+from fastapi import FastAPI, Query, HTTPException, Response, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -462,6 +462,75 @@ def export_listings_csv(
     )
 
 import os
+from database.db import DB_PATH
+
+@app.get("/api/db/export")
+def export_database():
+    """Exports the SQLite database file for backup or local inspection."""
+    db_path = os.getenv("PAKWHEELS_DB_PATH", DB_PATH)
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="Database file not found")
+    return FileResponse(
+        db_path,
+        media_type="application/x-sqlite3",
+        filename="pakwheels.db"
+    )
+
+@app.post("/api/db/import")
+async def import_database(file: UploadFile = File(...)):
+    """Uploads and syncs a SQLite database file into the active instance."""
+    db_path = os.getenv("PAKWHEELS_DB_PATH", DB_PATH)
+    temp_path = db_path + ".upload"
+    try:
+        content = await file.read()
+        if len(content) < 100:
+            raise HTTPException(status_code=400, detail="Uploaded file is too small or empty")
+        if not content.startswith(b"SQLite format 3"):
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid SQLite database")
+        with open(temp_path, "wb") as f:
+            f.write(content)
+        os.replace(temp_path, db_path)
+        logger.info(f"Database successfully replaced from uploaded file ({len(content)} bytes)")
+        return {"status": "ok", "message": f"Database updated ({len(content)} bytes)"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        logger.error(f"Error importing database: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/debug/test-fetch")
+async def debug_test_fetch(url: str = "https://www.pakwheels.com/used-cars/search/-/mk_suzuki/md_alto/ct_lahore/"):
+    """Quick diagnostic endpoint to test server connectivity and Cloudflare response."""
+    result = {"url": url}
+    try:
+        from curl_cffi.requests import AsyncSession
+        async with AsyncSession(impersonate="chrome124", timeout=15) as s:
+            r = await s.get(url)
+            result["curl_cffi"] = {
+                "status_code": r.status_code,
+                "length": len(r.text),
+                "is_cf_challenge": "Just a moment..." in r.text or "cf-turnstile" in r.text,
+                "server": r.headers.get("server")
+            }
+    except Exception as e:
+        result["curl_cffi"] = {"error": str(e)}
+
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True) as h:
+            r2 = await h.get(url)
+            result["httpx"] = {
+                "status_code": r2.status_code,
+                "length": len(r2.text),
+                "server": r2.headers.get("server")
+            }
+    except Exception as e:
+        result["httpx"] = {"error": str(e)}
+
+    return result
+
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 if os.path.exists(DIST_DIR):
     assets_dir = os.path.join(DIST_DIR, "assets")

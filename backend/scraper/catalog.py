@@ -6,12 +6,21 @@ import httpx
 from bs4 import BeautifulSoup
 from database.db import save_car_catalog, get_catalog_hierarchy
 
+try:
+    from curl_cffi.requests import AsyncSession
+    HAS_CURL_CFFI = True
+except ImportError:
+    HAS_CURL_CFFI = False
+
 logger = logging.getLogger(__name__)
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
 }
 
 POPULAR_CITIES = [
@@ -48,7 +57,13 @@ async def scrape_full_catalog() -> List[Dict[str, Any]]:
     url = "https://www.pakwheels.com/sitemap/"
     catalog_items: List[Dict[str, Any]] = []
 
-    async with httpx.AsyncClient(headers=HEADERS, timeout=20.0, follow_redirects=True) as client:
+    client_ctx = (
+        AsyncSession(impersonate="chrome124", headers=HEADERS, timeout=20.0)
+        if HAS_CURL_CFFI
+        else httpx.AsyncClient(headers=HEADERS, timeout=20.0, follow_redirects=True)
+    )
+
+    async with client_ctx as client:
         try:
             resp = await client.get(url)
             if resp.status_code != 200:

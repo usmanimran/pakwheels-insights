@@ -249,5 +249,25 @@ class TestSQAAndFeatures(unittest.TestCase):
         t4 = generate_segment_title("Suzuki", "Alto", "VXL AGS", "Lahore", 2022, 2022)
         self.assertEqual(t4, "Suzuki Alto (VXL AGS) (2022) in Lahore")
 
+    def test_db_export_and_import(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        client = TestClient(app)
+
+        # 1. Test export
+        export_resp = client.get("/api/db/export")
+        self.assertEqual(export_resp.status_code, 200)
+        self.assertTrue(export_resp.content.startswith(b"SQLite format 3"))
+
+        # 2. Test import with invalid content
+        bad_import = client.post("/api/db/import", files={"file": ("test.db", b"not a valid sqlite file")})
+        self.assertEqual(bad_import.status_code, 400)
+
+        # 3. Test import with valid content
+        good_import = client.post("/api/db/import", files={"file": ("pakwheels.db", export_resp.content)})
+        self.assertEqual(good_import.status_code, 200)
+        self.assertEqual(good_import.json()["status"], "ok")
+
 if __name__ == '__main__':
     unittest.main()
+
