@@ -12,7 +12,11 @@ try:
 except ImportError:
     HAS_CURL_CFFI = False
 
+import os
+
 logger = logging.getLogger(__name__)
+
+PROXY = os.environ.get("SCRAPER_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -57,11 +61,16 @@ async def scrape_full_catalog() -> List[Dict[str, Any]]:
     url = "https://www.pakwheels.com/sitemap/"
     catalog_items: List[Dict[str, Any]] = []
 
-    client_ctx = (
-        AsyncSession(impersonate="chrome124", headers=HEADERS, timeout=20.0)
-        if HAS_CURL_CFFI
-        else httpx.AsyncClient(headers=HEADERS, timeout=20.0, follow_redirects=True)
-    )
+    if HAS_CURL_CFFI:
+        sess_kwargs = {"impersonate": "chrome124", "headers": HEADERS, "timeout": 20.0}
+        if PROXY:
+            sess_kwargs["proxy"] = PROXY
+        client_ctx = AsyncSession(**sess_kwargs)
+    else:
+        cl_kwargs = {"headers": HEADERS, "timeout": 20.0, "follow_redirects": True}
+        if PROXY:
+            cl_kwargs["proxy"] = PROXY
+        client_ctx = httpx.AsyncClient(**cl_kwargs)
 
     async with client_ctx as client:
         try:

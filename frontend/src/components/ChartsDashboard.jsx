@@ -18,7 +18,7 @@ import {
 import {
   TrendingUp, ScatterChart as ScatterIcon, Layers, PieChart as PieIcon,
   BarChart2, ExternalLink, ZoomIn, ZoomOut, RotateCcw, Calendar, Check,
-  Award, Sparkles
+  Award, Sparkles, HelpCircle, Info, X
 } from 'lucide-react';
 
 // Custom Tooltip for Price vs Model Year
@@ -47,6 +47,20 @@ const YearTooltip = ({ active, payload, label }) => {
 const ScatterTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
+    if (data.isTrend) {
+      return (
+        <div className="bg-white/95 dark:bg-[#0D2342]/95 border border-emerald-500/40 p-2.5 rounded-xl shadow-xl text-xs space-y-0.5 backdrop-blur-md">
+          <div className="flex items-center space-x-1.5 text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px]">
+            <span className="w-2.5 h-0.5 bg-emerald-500 rounded-full" />
+            <span>Fair Value Regression Baseline</span>
+          </div>
+          <p className="text-[10px] text-slate-600 dark:text-slate-300">
+            Expected: <strong>{data.price_lacs} Lacs</strong> at <strong>{data.mileage?.toLocaleString()} km</strong>
+          </p>
+          <p className="text-[9px] text-slate-400">Cars below this dashed line are undervalued deals.</p>
+        </div>
+      );
+    }
     return (
       <div className="bg-white/95 dark:bg-[#0D2342]/95 border border-slate-200 dark:border-[#1C3B66] p-3 rounded-xl shadow-2xl text-xs space-y-1 max-w-xs backdrop-blur-md">
         <div className="flex items-center justify-between gap-1.5 mb-1">
@@ -89,6 +103,7 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
   const [dealRatingFilter, setDealRatingFilter] = useState('all');
   // Mobile sub-view: 'chart' or 'top_deals'
   const [scatterSubView, setScatterSubView] = useState('chart');
+  const [showFairValueModal, setShowFairValueModal] = useState(false);
 
   // Zoom State for Scatter Plot
   const [zoomFactor, setZoomFactor] = useState(1);
@@ -116,24 +131,67 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     return allScatterPoints.map((p) => p.mileage).filter((m) => m > 0);
   }, [allScatterPoints]);
 
+  // Smart 98th percentile to prevent extreme single outliers (e.g. 643,000 km) from squishing 98% of cars into 20% width
+  const p98Mileage = useMemo(() => {
+    if (!rawMileages.length) return 150000;
+    const sorted = [...rawMileages].sort((a, b) => a - b);
+    const idx = Math.min(Math.floor(sorted.length * 0.98), sorted.length - 1);
+    return Math.max(sorted[idx], 100000);
+  }, [rawMileages]);
+
+  const p98Price = useMemo(() => {
+    if (!rawPrices.length) return 50;
+    const sorted = [...rawPrices].sort((a, b) => a - b);
+    const idx = Math.min(Math.floor(sorted.length * 0.98), sorted.length - 1);
+    return Math.max(sorted[idx], 15);
+  }, [rawPrices]);
+
   const dynamicPriceDomain = useMemo(() => {
     if (!rawPrices.length) return [0, 50];
     const min = Math.min(...rawPrices);
-    const max = Math.max(...rawPrices);
-    // Add small breathing room (5-10%) so dots don't touch the outer axes
-    const padMin = Math.max(0, Math.floor(min * 0.9));
-    const padMax = Math.ceil(max * 1.05);
-    return [padMin, priceZoomMax || padMax];
-  }, [rawPrices, priceZoomMax]);
+    const padMin = Math.max(0, Math.floor(min * 0.85));
+    const padMax = priceZoomMax || Math.ceil(p98Price * 1.15);
+    return [padMin, padMax];
+  }, [rawPrices, p98Price, priceZoomMax]);
 
   const dynamicMileageDomain = useMemo(() => {
     if (!rawMileages.length) return [0, 150000];
     const min = Math.min(...rawMileages);
-    const max = Math.max(...rawMileages);
-    const padMin = Math.max(0, Math.floor(min * 0.85));
-    const padMax = Math.ceil(max * 1.05);
-    return [padMin, mileageZoomMax || padMax];
-  }, [rawMileages, mileageZoomMax]);
+    const padMin = Math.max(0, Math.floor(min * 0.8));
+    const padMax = mileageZoomMax || Math.ceil(p98Mileage * 1.12);
+    return [padMin, padMax];
+  }, [rawMileages, p98Mileage, mileageZoomMax]);
+
+  // Compute linear regression Fair Value Trendline (Price vs Mileage)
+  const fairValueTrendData = useMemo(() => {
+    const maxX = dynamicMileageDomain[1] || 150000;
+    const validPoints = allScatterPoints.filter(
+      (p) => p.mileage > 0 && p.price_lacs > 0 && p.mileage <= maxX * 1.2
+    );
+    if (validPoints.length < 3) return [];
+
+    const n = validPoints.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    for (const p of validPoints) {
+      sumX += p.mileage;
+      sumY += p.price_lacs;
+      sumXY += p.mileage * p.price_lacs;
+      sumXX += p.mileage * p.mileage;
+    }
+    const denom = (n * sumXX - sumX * sumX);
+    if (denom === 0) return [];
+    const slope = (n * sumXY - sumX * sumY) / denom;
+    const intercept = (sumY - slope * sumX) / n;
+
+    const minX = dynamicMileageDomain[0] || 0;
+    const yAtMin = Math.max(0.5, Number((intercept + slope * minX).toFixed(2)));
+    const yAtMax = Math.max(0.5, Number((intercept + slope * maxX).toFixed(2)));
+
+    return [
+      { mileage: minX, price_lacs: yAtMin, isTrend: true },
+      { mileage: maxX, price_lacs: yAtMax, isTrend: true }
+    ];
+  }, [allScatterPoints, dynamicMileageDomain]);
 
   // Filter scatter points by rating filter and zoom
   const displayedScatterPoints = useMemo(() => {
@@ -329,7 +387,7 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
       </div>
 
       {/* Chart Views Container */}
-      <div className={`${activeTab === 'variants' ? 'min-h-[460px] md:h-96' : activeTab === 'scatter' ? 'min-h-[380px] sm:h-[420px]' : 'h-72 sm:h-96'} w-full`}>
+      <div className={`${activeTab === 'variants' ? 'min-h-[460px] md:h-96' : activeTab === 'scatter' ? 'min-h-[450px] sm:min-h-[480px]' : 'h-72 sm:h-96'} w-full`}>
 
         {/* 1. Price by Model Year (Mobile-friendly ticks + Era presets) */}
         {activeTab === 'year' && (
@@ -465,29 +523,51 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                 </button>
               </div>
 
-              {/* Sub-view toggle: Chart vs Top Deals List */}
-              <div className="flex items-center bg-slate-100 dark:bg-[#061021] p-0.5 rounded-lg border border-slate-200 dark:border-[#1A3B6B]">
+              {/* Action Tools: Fair Value Guide & Sub-view toggle */}
+              <div className="flex items-center flex-wrap gap-2">
+                {/* Fair Value Line Indicator */}
+                {scatterSubView === 'chart' && (
+                  <div className="hidden md:flex items-center space-x-1.5 px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">
+                    <span className="w-3.5 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block" />
+                    <span>Fair Value Line</span>
+                  </div>
+                )}
+
+                {/* How Fair Value is Calculated Button */}
                 <button
-                  onClick={() => setScatterSubView('chart')}
-                  className={`px-2 py-1 rounded text-[10px] font-bold transition ${
-                    scatterSubView === 'chart'
-                      ? 'bg-white dark:bg-[#112646] text-slate-900 dark:text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
+                  type="button"
+                  onClick={() => setShowFairValueModal(true)}
+                  className="flex items-center space-x-1 px-2 py-1 rounded-lg text-[10px] font-bold text-sky-700 dark:text-sky-300 hover:text-sky-900 dark:hover:text-white bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 transition shadow-sm"
+                  title="Learn how fair market prices and deal ratings are calculated"
                 >
-                  📈 Scatter Chart
+                  <HelpCircle className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                  <span>How Fair Value is Calculated</span>
                 </button>
-                <button
-                  onClick={() => setScatterSubView('top_deals')}
-                  className={`px-2 py-1 rounded text-[10px] font-bold transition flex items-center space-x-1 ${
-                    scatterSubView === 'top_deals'
-                      ? 'bg-emerald-600 text-white shadow-sm'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  <Award className="w-3 h-3" />
-                  <span>🏆 Top {topDealsList.length} Deals</span>
-                </button>
+
+                {/* Sub-view toggle: Chart vs Top Deals List */}
+                <div className="flex items-center bg-slate-100 dark:bg-[#061021] p-0.5 rounded-lg border border-slate-200 dark:border-[#1A3B6B]">
+                  <button
+                    onClick={() => setScatterSubView('chart')}
+                    className={`px-2 py-1 rounded text-[10px] font-bold transition ${
+                      scatterSubView === 'chart'
+                        ? 'bg-white dark:bg-[#112646] text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    📈 Scatter Chart
+                  </button>
+                  <button
+                    onClick={() => setScatterSubView('top_deals')}
+                    className={`px-2 py-1 rounded text-[10px] font-bold transition flex items-center space-x-1 ${
+                      scatterSubView === 'top_deals'
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Award className="w-3 h-3" />
+                    <span>🏆 Top {topDealsList.length} Deals</span>
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -581,7 +661,7 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
             ) : (
               /* View B: Dynamic Scaling Scatter Plot (Points spread vertically & horizontally) */
               <>
-                <div className="flex-1 w-full min-h-[220px] sm:min-h-[250px]">
+                <div className="w-full h-[270px] sm:h-[310px] md:h-[340px] relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -591,6 +671,7 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                         name="Mileage"
                         stroke={tickStroke}
                         domain={dynamicMileageDomain}
+                        allowDataOverflow={true}
                         tick={{ fill: tickStroke, fontSize: 10 }}
                         tickFormatter={(v) => `${(v / 1000).toFixed(0)}k km`}
                       />
@@ -600,6 +681,7 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                         name="Price"
                         stroke={tickStroke}
                         domain={dynamicPriceDomain}
+                        allowDataOverflow={true}
                         tick={{ fill: tickStroke, fontSize: 10 }}
                         width={42}
                         tickFormatter={(v) => `${v}L`}
@@ -607,21 +689,36 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                       {/* Responsive touch size */}
                       <ZAxis range={[100, 100]} />
                       <Tooltip content={<ScatterTooltip />} />
+                      {/* Fair Value Regression Trendline */}
+                      {fairValueTrendData.length > 0 && (
+                        <Scatter
+                          name="Fair Market Value Trend"
+                          data={fairValueTrendData}
+                          line={{ stroke: isLight ? '#059669' : '#10B981', strokeWidth: 2, strokeDasharray: '5 5' }}
+                          shape={() => null}
+                          legendType="none"
+                          isAnimationActive={false}
+                        />
+                      )}
+                      {/* Vehicle Scatter Points */}
                       <Scatter
                         name="Vehicles"
                         data={displayedScatterPoints}
                         onClick={(node) => handleDotClick(node.payload || node)}
                         cursor="pointer"
                       >
-                        {displayedScatterPoints.map((entry, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={entry.color}
-                            fillOpacity={activeScatterPoint?.id === entry.id ? 1 : 0.85}
-                            stroke={activeScatterPoint?.id === entry.id ? '#FFFFFF' : 'none'}
-                            strokeWidth={activeScatterPoint?.id === entry.id ? 2 : 0}
-                          />
-                        ))}
+                        {displayedScatterPoints.map((entry, index) => {
+                          const isSelected = activeScatterPoint?.id === entry.id;
+                          return (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color}
+                              fillOpacity={isSelected ? 1 : 0.82}
+                              stroke={isSelected ? '#FFFFFF' : isLight ? '#FFFFFF' : '#0B1E38'}
+                              strokeWidth={isSelected ? 2.5 : 1}
+                            />
+                          );
+                        })}
                       </Scatter>
                     </ScatterChart>
                   </ResponsiveContainer>
@@ -779,6 +876,104 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
         )}
 
       </div>
+
+      {/* Fair Value Methodology Modal */}
+      {showFairValueModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={() => setShowFairValueModal(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-white dark:bg-[#0D2342] border border-slate-200 dark:border-[#1C3B66] rounded-2xl shadow-2xl p-4 sm:p-6 text-slate-800 dark:text-slate-100 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-[#1A3B6B]">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                    How Fair Value is Calculated
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    PakWheels Insights Market Pricing & Deal Algorithm
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFairValueModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112646] transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Explanation Steps */}
+            <div className="mt-4 space-y-3.5 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1A3B6B]">
+                <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-1 flex items-center space-x-1.5">
+                  <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">1</span>
+                  <span>Active Market Median Baseline</span>
+                </h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                  We collect current real-world asking prices across all listings for this vehicle make and model, removing statistical extreme outliers (e.g. invalid 600k+ km listings) to establish the authentic asking price distribution.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1A3B6B]">
+                <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-1 flex items-center space-x-1.5">
+                  <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">2</span>
+                  <span>Mileage Depreciation Curve (Green Dashed Line)</span>
+                </h4>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                  A vehicle with 20,000 km is worth more than the same model with 120,000 km. We calculate a linear regression trendline across odometer mileage and price. The green dashed line shows exactly what the market expects a car with that mileage to cost.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1A3B6B]">
+                <h4 className="font-bold text-slate-900 dark:text-white text-xs mb-1.5 flex items-center space-x-1.5">
+                  <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-black">3</span>
+                  <span>Deal Rating Thresholds</span>
+                </h4>
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 flex-shrink-0">
+                      Great Deal
+                    </span>
+                    <span>Priced <strong>&gt; 8% below</strong> the fair market curve for its mileage. High bargain potential!</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-sky-500/20 text-sky-700 dark:text-sky-300 border border-sky-500/30 flex-shrink-0">
+                      Fair Price
+                    </span>
+                    <span>Priced within <strong>±8%</strong> of the expected market baseline for its odometer reading.</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 flex-shrink-0">
+                      Above Market
+                    </span>
+                    <span>Priced <strong>&gt; 8% higher</strong> than standard valuation (often leaves strong room to negotiate).</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="mt-4 pt-3 border-t border-slate-200 dark:border-[#1A3B6B] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowFairValueModal(false)}
+                className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

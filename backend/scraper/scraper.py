@@ -13,11 +13,15 @@ try:
 except ImportError:
     HAS_CURL_CFFI = False
 
+import os
+
 logger = logging.getLogger(__name__)
+
+PROXY = os.environ.get("SCRAPER_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
     "Referer": "https://www.pakwheels.com/",
     "Sec-Ch-Ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
@@ -301,30 +305,64 @@ async def scrape_listings_generator(
     all_listings: List[Dict[str, Any]] = []
 
     if HAS_CURL_CFFI:
-        client_ctx = AsyncSession(impersonate="chrome124", headers=HEADERS, timeout=18.0)
+        session_kwargs = {"impersonate": "chrome124", "headers": HEADERS, "timeout": 18.0}
+        if PROXY:
+            session_kwargs["proxy"] = PROXY
+        client_ctx = AsyncSession(**session_kwargs)
     else:
-        client_ctx = httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=18.0)
+        client_kwargs = {"headers": HEADERS, "follow_redirects": True, "timeout": 18.0}
+        if PROXY:
+            client_kwargs["proxy"] = PROXY
+        client_ctx = httpx.AsyncClient(**client_kwargs)
 
     async with client_ctx as client:
+        # Step 1: Warm up session on PakWheels homepage to acquire authentic session cookies & CSRF tokens
+        try:
+            yield {
+                "status": "progress",
+                "current_page": 0,
+                "total_pages": 1,
+                "count": 0,
+                "percent": 8,
+                "message": "Establishing secure browser session with PakWheels..."
+            }
+            warmup_resp = await client.get("https://www.pakwheels.com/", timeout=12.0)
+            logger.info(f"Session warmup response code: {warmup_resp.status_code}")
+        except Exception as we:
+            logger.warning(f"Session warmup attempt notice: {we}")
+
         status, html, err = await fetch_page(client, first_url)
         if (status != 200 or not html) and HAS_CURL_CFFI:
-            # Fallback to safari impersonation
-            logger.info("Retrying with Safari impersonation...")
-            try:
-                async with AsyncSession(impersonate="safari17_0", headers=HEADERS, timeout=18.0) as safari_client:
-                    s_stat, s_html, s_err = await fetch_page(safari_client, first_url)
-                    if s_stat == 200 and s_html:
-                        client = safari_client
-                        status, html = s_stat, s_html
-                    else:
-                        err = s_err or err
-            except Exception as se:
-                logger.warning(f"Safari retry failed: {se}")
+            # Fallback to alternate browser impersonations
+            for alt_impersonate in ["chrome120", "safari17_0", "edge101"]:
+                logger.info(f"Retrying with {alt_impersonate} impersonation...")
+                try:
+                    s_kwargs = {"impersonate": alt_impersonate, "headers": HEADERS, "timeout": 18.0}
+                    if PROXY:
+                        s_kwargs["proxy"] = PROXY
+                    async with AsyncSession(**s_kwargs) as alt_client:
+                        try:
+                            await alt_client.get("https://www.pakwheels.com/", timeout=10.0)
+                        except Exception:
+                            pass
+                        s_stat, s_html, s_err = await fetch_page(alt_client, first_url)
+                        if s_stat == 200 and s_html:
+                            client = alt_client
+                            status, html = s_stat, s_html
+                            break
+                        else:
+                            err = s_err or err
+                except Exception as se:
+                    logger.warning(f"{alt_impersonate} retry failed: {se}")
 
         if status != 200 or not html:
+            if status == 403:
+                msg = "PakWheels Cloudflare WAF restricted cloud datacenter IP (HTTP 403). Tip: You can scrape on your local PC and upload your database in 1 second via 'DB -> Upload DB', or configure a proxy in Railway."
+            else:
+                msg = f"Could not connect to PakWheels (HTTP {status}): {err or 'Connection restricted'}"
             yield {
                 "status": "error",
-                "message": f"Could not connect to PakWheels (HTTP {status}): {err or 'Connection restricted'}"
+                "message": msg
             }
             return
 
