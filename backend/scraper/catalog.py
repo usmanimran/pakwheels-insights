@@ -1,7 +1,7 @@
 import re
 import asyncio
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import httpx
 from bs4 import BeautifulSoup
 from database.db import save_car_catalog, get_catalog_hierarchy
@@ -16,7 +16,15 @@ import os
 
 logger = logging.getLogger(__name__)
 
-PROXY = os.environ.get("SCRAPER_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
+def get_effective_proxy() -> Optional[str]:
+    try:
+        from database.db import get_setting
+        db_p = get_setting("scraper_proxy")
+        if db_p and db_p.strip():
+            return db_p.strip()
+    except Exception:
+        pass
+    return os.environ.get("SCRAPER_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -61,15 +69,16 @@ async def scrape_full_catalog() -> List[Dict[str, Any]]:
     url = "https://www.pakwheels.com/sitemap/"
     catalog_items: List[Dict[str, Any]] = []
 
+    proxy = get_effective_proxy()
     if HAS_CURL_CFFI:
         sess_kwargs = {"impersonate": "chrome124", "headers": HEADERS, "timeout": 20.0}
-        if PROXY:
-            sess_kwargs["proxy"] = PROXY
+        if proxy:
+            sess_kwargs["proxy"] = proxy
         client_ctx = AsyncSession(**sess_kwargs)
     else:
         cl_kwargs = {"headers": HEADERS, "timeout": 20.0, "follow_redirects": True}
-        if PROXY:
-            cl_kwargs["proxy"] = PROXY
+        if proxy:
+            cl_kwargs["proxy"] = proxy
         client_ctx = httpx.AsyncClient(**cl_kwargs)
 
     async with client_ctx as client:

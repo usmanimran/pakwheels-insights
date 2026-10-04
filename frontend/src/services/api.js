@@ -86,3 +86,30 @@ export function getExportCsvUrl(params = {}) {
   });
   return `${API_BASE}/export?${query.toString()}`;
 }
+
+export async function fetchProxySettings() {
+  const res = await fetch(`${API_BASE}/settings/proxy`);
+  if (!res.ok) throw new Error('Failed to fetch proxy settings');
+  return res.json();
+}
+
+export async function saveProxySettings(proxy) {
+  const res = await fetch(`${API_BASE}/settings/proxy`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proxy })
+  });
+  if (!res.ok) throw new Error('Failed to save proxy');
+  return res.json();
+}
+
+export async function testProxySettings(proxy) {
+  const res = await fetch(`${API_BASE}/settings/proxy/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proxy })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || data.message || 'Proxy test failed');
+  return data;
+}

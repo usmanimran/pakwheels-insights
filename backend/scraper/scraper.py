@@ -17,7 +17,15 @@ import os
 
 logger = logging.getLogger(__name__)
 
-PROXY = os.environ.get("SCRAPER_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
+def get_effective_proxy() -> Optional[str]:
+    try:
+        from database.db import get_setting
+        db_p = get_setting("scraper_proxy")
+        if db_p and db_p.strip():
+            return db_p.strip()
+    except Exception:
+        pass
+    return os.environ.get("SCRAPER_PROXY") or os.environ.get("HTTP_PROXY") or os.environ.get("HTTPS_PROXY")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -303,16 +311,19 @@ async def scrape_listings_generator(
     }
 
     all_listings: List[Dict[str, Any]] = []
+    proxy = get_effective_proxy()
+    if proxy:
+        logger.info(f"Scraping using active proxy: {proxy.split('@')[-1] if '@' in proxy else proxy}")
 
     if HAS_CURL_CFFI:
         session_kwargs = {"impersonate": "chrome124", "headers": HEADERS, "timeout": 18.0}
-        if PROXY:
-            session_kwargs["proxy"] = PROXY
+        if proxy:
+            session_kwargs["proxy"] = proxy
         client_ctx = AsyncSession(**session_kwargs)
     else:
         client_kwargs = {"headers": HEADERS, "follow_redirects": True, "timeout": 18.0}
-        if PROXY:
-            client_kwargs["proxy"] = PROXY
+        if proxy:
+            client_kwargs["proxy"] = proxy
         client_ctx = httpx.AsyncClient(**client_kwargs)
 
     async with client_ctx as client:
@@ -338,8 +349,8 @@ async def scrape_listings_generator(
                 logger.info(f"Retrying with {alt_impersonate} impersonation...")
                 try:
                     s_kwargs = {"impersonate": alt_impersonate, "headers": HEADERS, "timeout": 18.0}
-                    if PROXY:
-                        s_kwargs["proxy"] = PROXY
+                    if proxy:
+                        s_kwargs["proxy"] = proxy
                     async with AsyncSession(**s_kwargs) as alt_client:
                         try:
                             await alt_client.get("https://www.pakwheels.com/", timeout=10.0)
@@ -356,13 +367,15 @@ async def scrape_listings_generator(
                     logger.warning(f"{alt_impersonate} retry failed: {se}")
 
         if status != 200 or not html:
-            if status == 403:
-                msg = "PakWheels Cloudflare WAF restricted cloud datacenter IP (HTTP 403). Tip: You can scrape on your local PC and upload your database in 1 second via 'DB -> Upload DB', or configure a proxy in Railway."
+            is_waf = status == 403 or "challenge" in (err or "").lower()
+            if is_waf:
+                msg = "PakWheels Cloudflare WAF restricted cloud datacenter IP (HTTP 403). Configure a proxy below (e.g. free from Webshare.io) or upload your local PC database in 1 second via 'DB -> Upload DB'."
             else:
                 msg = f"Could not connect to PakWheels (HTTP {status}): {err or 'Connection restricted'}"
             yield {
                 "status": "error",
-                "message": msg
+                "message": msg,
+                "is_waf_block": is_waf
             }
             return
 

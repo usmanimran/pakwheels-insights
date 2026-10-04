@@ -268,6 +268,31 @@ class TestSQAAndFeatures(unittest.TestCase):
         self.assertEqual(good_import.status_code, 200)
         self.assertEqual(good_import.json()["status"], "ok")
 
+    def test_proxy_settings_endpoints(self):
+        from fastapi.testclient import TestClient
+        from main import app
+        client = TestClient(app)
+
+        # 1. Get proxy setting
+        r1 = client.get("/api/settings/proxy")
+        self.assertEqual(r1.status_code, 200)
+
+        # 2. Save proxy setting
+        r2 = client.post("/api/settings/proxy", json={"proxy": "http://user:pass@127.0.0.1:8080"})
+        self.assertEqual(r2.status_code, 200)
+        self.assertEqual(r2.json()["status"], "ok")
+
+        # 3. Verify it is set
+        r3 = client.get("/api/settings/proxy")
+        self.assertEqual(r3.status_code, 200)
+        self.assertTrue(r3.json()["is_configured"])
+
+        # 4. Clear proxy setting
+        r4 = client.post("/api/settings/proxy", json={"proxy": ""})
+        self.assertEqual(r4.status_code, 200)
+        r5 = client.get("/api/settings/proxy")
+        self.assertEqual(r5.json()["proxy"], "")
+
 if __name__ == '__main__':
     unittest.main()
 

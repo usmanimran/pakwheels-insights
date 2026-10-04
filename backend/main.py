@@ -10,6 +10,7 @@ from fastapi import FastAPI, Query, HTTPException, Response, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from database.db import (
@@ -530,6 +531,52 @@ async def debug_test_fetch(url: str = "https://www.pakwheels.com/used-cars/searc
         result["httpx"] = {"error": str(e)}
 
     return result
+
+class ProxyPayload(BaseModel):
+    proxy: Optional[str] = None
+
+@app.get("/api/settings/proxy")
+def get_proxy_settings():
+    """Returns current active proxy and its configuration source."""
+    from database.db import get_setting
+    from scraper.scraper import get_effective_proxy
+    active = get_effective_proxy()
+    saved = get_setting("scraper_proxy")
+    return {
+        "proxy": saved or "",
+        "active_proxy": (active[:8] + "..." + active.split("@")[-1]) if active and "@" in active else (active or ""),
+        "is_configured": bool(active),
+        "source": "database" if saved else ("environment" if active else "none")
+    }
+
+@app.post("/api/settings/proxy")
+def update_proxy_settings(payload: ProxyPayload):
+    """Saves or clears the scraper proxy in application settings."""
+    from database.db import set_setting
+    p = (payload.proxy or "").strip()
+    set_setting("scraper_proxy", p if p else None)
+    return {"status": "ok", "message": "Proxy updated successfully" if p else "Proxy cleared"}
+
+@app.post("/api/settings/proxy/test")
+async def test_proxy_settings(payload: ProxyPayload):
+    """Tests if a proxy can successfully connect to PakWheels without Cloudflare block."""
+    from scraper.scraper import get_effective_proxy
+    p = (payload.proxy or "").strip() or get_effective_proxy()
+    if not p:
+        raise HTTPException(status_code=400, detail="No proxy address provided to test")
+
+    from curl_cffi.requests import AsyncSession
+    try:
+        async with AsyncSession(impersonate="chrome124", proxy=p, timeout=12.0) as s:
+            r = await s.get("https://www.pakwheels.com/", timeout=12.0)
+            if r.status_code == 200 and "pakwheels" in r.text.lower():
+                return {"status": "ok", "message": f"Success! Proxy connected to PakWheels (HTTP {r.status_code})"}
+            elif "Just a moment..." in r.text or "cf-turnstile" in r.text:
+                return {"status": "error", "message": "Proxy reached PakWheels but was blocked by Cloudflare verification."}
+            else:
+                return {"status": "error", "message": f"PakWheels responded with HTTP {r.status_code}"}
+    except Exception as e:
+        return {"status": "error", "message": f"Connection failed: {str(e)}"}
 
 DIST_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 if os.path.exists(DIST_DIR):

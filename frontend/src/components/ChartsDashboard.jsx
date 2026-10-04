@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -62,9 +62,14 @@ const ScatterTooltip = ({ active, payload }) => {
       );
     }
     return (
-      <div className="bg-white/95 dark:bg-[#0D2342]/95 border border-slate-200 dark:border-[#1C3B66] p-3 rounded-xl shadow-2xl text-xs space-y-1 max-w-xs backdrop-blur-md">
+      <div
+        onClick={() => data.url && window.open(data.url, '_blank')}
+        className="bg-white/98 dark:bg-[#0D2342]/98 border border-slate-300 dark:border-[#1C3B66] p-3 rounded-xl shadow-2xl text-xs space-y-1.5 max-w-xs backdrop-blur-md cursor-pointer hover:border-[#C8232C] dark:hover:border-[#C8232C] transition-all group"
+      >
         <div className="flex items-center justify-between gap-1.5 mb-1">
-          <span className="font-bold text-slate-900 dark:text-white truncate text-[11px] sm:text-xs">{data.title || `${data.year} Model`}</span>
+          <span className="font-extrabold text-slate-900 dark:text-white truncate text-xs group-hover:text-[#C8232C] transition-colors">
+            {data.title || `${data.year} Model`}
+          </span>
           <span
             className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase flex-shrink-0 ${
               data.rating === 'Great Deal'
@@ -77,16 +82,30 @@ const ScatterTooltip = ({ active, payload }) => {
             {data.rating}
           </span>
         </div>
-        <p className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
-          PKR {data.price_lacs} Lacs
-          <span className="text-slate-500 dark:text-slate-400 text-[10px] font-normal ml-1">
+        <div className="flex items-baseline justify-between">
+          <p className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
+            PKR {data.price_lacs} Lacs
+          </p>
+          <span className="text-slate-500 dark:text-slate-400 text-[10px] font-normal">
             ({data.price?.toLocaleString()} PKR)
           </span>
-        </p>
+        </div>
         <div className="text-slate-600 dark:text-slate-300 flex items-center justify-between text-[10px] pt-1 border-t border-slate-200 dark:border-[#1A3B6B]">
           <span>Year: <strong className="text-slate-900 dark:text-white">{data.year}</strong></span>
           <span>Mileage: <strong className="text-slate-900 dark:text-white">{data.mileage?.toLocaleString()} km</strong></span>
         </div>
+        {data.url && (
+          <a
+            href={data.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full mt-1 px-2.5 py-1.5 rounded-lg bg-[#C8232C] hover:bg-[#A81B23] text-white font-bold text-[10px] flex items-center justify-center space-x-1.5 shadow transition"
+          >
+            <span>View Ad on PakWheels</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
       </div>
     );
   }
@@ -240,27 +259,29 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     return null;
   }, [activeScatterPoint, displayedScatterPoints]);
 
-  const handleZoomIn = () => {
-    setZoomFactor((prev) => Math.min(prev + 0.5, 3));
+  const handleZoomIn = (step = 0.35) => {
+    setZoomFactor((prev) => Math.min(Number((prev + step).toFixed(1)), 4));
     setMileageZoomMax((prev) => {
       const current = prev || dynamicMileageDomain[1];
-      return Math.max(Math.round(current * 0.75), 30000);
+      return Math.max(Math.round(current * (1 - step * 0.45)), 25000);
     });
     setPriceZoomMax((prev) => {
       const current = prev || dynamicPriceDomain[1];
-      return Math.max(Math.round(current * 0.75), 10);
+      return Math.max(Math.round(current * (1 - step * 0.45)), 8);
     });
   };
 
-  const handleZoomOut = () => {
-    setZoomFactor((prev) => Math.max(prev - 0.5, 1));
+  const handleZoomOut = (step = 0.35) => {
+    setZoomFactor((prev) => Math.max(Number((prev - step).toFixed(1)), 1));
     setMileageZoomMax((prev) => {
       const current = prev || dynamicMileageDomain[1];
-      return Math.min(Math.round(current * 1.33), 250000);
+      const maxAllowed = Math.ceil(p98Mileage * 1.25);
+      return Math.min(Math.round(current * (1 + step * 0.45)), maxAllowed);
     });
     setPriceZoomMax((prev) => {
       const current = prev || dynamicPriceDomain[1];
-      return Math.min(Math.round(current * 1.33), 150);
+      const maxAllowed = Math.ceil(p98Price * 1.25);
+      return Math.min(Math.round(current * (1 + step * 0.45)), maxAllowed);
     });
   };
 
@@ -268,6 +289,63 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
     setZoomFactor(1);
     setMileageZoomMax(null);
     setPriceZoomMax(null);
+  };
+
+  // Pinch-to-zoom touch gesture state
+  const touchState = useRef({
+    initialDistance: 0,
+    isPinching: false,
+    startX: 0,
+    startY: 0
+  });
+
+  const handleChartTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      // 2 fingers: pinch gesture
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      touchState.current.initialDistance = dist;
+      touchState.current.isPinching = true;
+    } else if (e.touches.length === 1) {
+      touchState.current.isPinching = false;
+      touchState.current.startX = e.touches[0].clientX;
+      touchState.current.startY = e.touches[0].clientY;
+    }
+  };
+
+  const handleChartTouchMove = (e) => {
+    if (e.touches.length === 2 && touchState.current.isPinching) {
+      if (e.cancelable) e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const ratio = dist / (touchState.current.initialDistance || 1);
+
+      if (ratio > 1.1) {
+        // Pinching outward -> Zoom In
+        handleZoomIn(0.2);
+        touchState.current.initialDistance = dist;
+      } else if (ratio < 0.9) {
+        // Pinching inward -> Zoom Out
+        handleZoomOut(0.2);
+        touchState.current.initialDistance = dist;
+      }
+    }
+  };
+
+  const handleChartTouchEnd = () => {
+    touchState.current.isPinching = false;
+  };
+
+  const handleChartWheel = (e) => {
+    if (Math.abs(e.deltaY) > 25) {
+      if (e.deltaY < 0) {
+        handleZoomIn(0.2);
+      } else {
+        handleZoomOut(0.2);
+      }
+    }
   };
 
   if (loading || !analytics || analytics.total_listings === 0) {
@@ -279,9 +357,13 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
   }
 
   const handleDotClick = (point) => {
-    if (point) {
-      setActiveScatterPoint(point);
+    if (!point) return;
+    // If clicking an already inspected point or on double-tap, immediately open the listing!
+    if (activeScatterPoint?.id === point.id && point.url) {
+      window.open(point.url, '_blank');
+      return;
     }
+    setActiveScatterPoint(point);
   };
 
   const isLight = theme === 'light';
@@ -661,7 +743,46 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
             ) : (
               /* View B: Dynamic Scaling Scatter Plot (Points spread vertically & horizontally) */
               <>
-                <div className="w-full h-[270px] sm:h-[310px] md:h-[340px] relative">
+                <div
+                  className="w-full h-[270px] sm:h-[310px] md:h-[340px] relative select-none"
+                  onTouchStart={handleChartTouchStart}
+                  onTouchMove={handleChartTouchMove}
+                  onTouchEnd={handleChartTouchEnd}
+                  onWheel={handleChartWheel}
+                >
+                  {/* Floating On-Chart Touch Zoom Toolbar */}
+                  <div className="absolute top-2 right-2 z-20 flex items-center bg-white/95 dark:bg-[#08162B]/95 backdrop-blur-md border border-slate-300 dark:border-[#1C3B66] rounded-xl p-1 shadow-lg space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => handleZoomIn(0.35)}
+                      className="p-1 sm:p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-slate-800 dark:text-white transition shadow-sm font-bold flex items-center justify-center"
+                      title="Zoom In (or pinch outward)"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 dark:text-sky-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleZoomOut(0.35)}
+                      className="p-1 sm:p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-slate-800 dark:text-white transition shadow-sm font-bold flex items-center justify-center"
+                      title="Zoom Out (or pinch inward)"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 dark:text-sky-400" />
+                    </button>
+                    {(mileageZoomMax || priceZoomMax || zoomFactor !== 1) && (
+                      <button
+                        type="button"
+                        onClick={handleResetZoom}
+                        className="p-1 sm:p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-amber-600 dark:text-amber-400 transition shadow-sm font-bold flex items-center justify-center"
+                        title="Reset Zoom to Full View"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                    )}
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 px-1 font-semibold hidden xs:inline">
+                      {zoomFactor > 1 ? `${zoomFactor}x` : 'Pinch to zoom'}
+                    </span>
+                  </div>
+
                   <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 10, right: 10, left: -10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -688,7 +809,11 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
                       />
                       {/* Responsive touch size */}
                       <ZAxis range={[100, 100]} />
-                      <Tooltip content={<ScatterTooltip />} />
+                      <Tooltip
+                        content={<ScatterTooltip />}
+                        wrapperStyle={{ pointerEvents: 'auto', zIndex: 50 }}
+                        cursor={{ strokeDasharray: '3 3', stroke: isLight ? '#94A3B8' : '#334155' }}
+                      />
                       {/* Fair Value Regression Trendline */}
                       {fairValueTrendData.length > 0 && (
                         <Scatter
@@ -726,7 +851,10 @@ export default function ChartsDashboard({ analytics, loading, theme = 'dark' }) 
 
                 {/* Mobile / Desktop Tap-to-Inspect Card */}
                 {currentInspectPoint && (
-                  <div className="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1C3B66] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-md">
+                  <div
+                    onClick={() => currentInspectPoint.url && window.open(currentInspectPoint.url, '_blank')}
+                    className="mt-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-50 dark:bg-[#112646] border border-slate-200 dark:border-[#1C3B66] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-md cursor-pointer hover:border-[#C8232C] dark:hover:border-[#C8232C] transition-all group"
+                  >
                     <div className="flex items-center space-x-2 truncate">
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase flex-shrink-0 ${
                         currentInspectPoint.rating === 'Great Deal'

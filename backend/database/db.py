@@ -106,6 +106,41 @@ def init_db():
     );
     """)
 
+    # Table for application settings (e.g. scraper proxy)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS app_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    """)
+
+    conn.commit()
+    conn.close()
+
+def get_setting(key: str, default: Optional[str] = None) -> Optional[str]:
+    """Retrieves an application setting value from the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT value FROM app_settings WHERE key = ?", (key,))
+    row = cursor.fetchone()
+    conn.close()
+    if row and row["value"]:
+        return row["value"]
+    return default
+
+def set_setting(key: str, value: Optional[str]):
+    """Stores or clears an application setting in the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    if value is None or value.strip() == "":
+        cursor.execute("DELETE FROM app_settings WHERE key = ?", (key,))
+    else:
+        cursor.execute("""
+        INSERT INTO app_settings (key, value, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
+        """, (key, value.strip()))
     conn.commit()
     conn.close()
 

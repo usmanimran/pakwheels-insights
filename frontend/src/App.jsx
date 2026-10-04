@@ -497,6 +497,7 @@ export default function App() {
       <ScrapeProgressModal
         progress={scrapeProgress}
         onClose={() => setScrapeProgress(null)}
+        onRetry={() => handleStartScrape(selectedMake, selectedModel, selectedCities, scanType)}
       />
 
     </div>

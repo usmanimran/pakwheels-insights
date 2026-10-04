@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Car, BarChart3, Database, RefreshCw, Scale, ExternalLink,
-  Download, Upload, ChevronDown, Sun, Moon
+  Download, Upload, ChevronDown, Sun, Moon, Globe, Check, AlertCircle, X
 } from 'lucide-react';
+import { fetchProxySettings, saveProxySettings, testProxySettings } from '../services/api';
 
 export default function Navbar({
   activeNavTab,
@@ -16,6 +17,52 @@ export default function Navbar({
   const [showDbMenu, setShowDbMenu] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Scraper Proxy Modal State
+  const [showProxyModal, setShowProxyModal] = useState(false);
+  const [proxyInput, setProxyInput] = useState('');
+  const [proxyStatus, setProxyStatus] = useState(null);
+  const [savingProxy, setSavingProxy] = useState(false);
+
+  useEffect(() => {
+    if (showProxyModal) {
+      fetchProxySettings()
+        .then((res) => {
+          if (res?.proxy) setProxyInput(res.proxy);
+        })
+        .catch(() => {});
+    }
+  }, [showProxyModal]);
+
+  const handleTestProxy = async () => {
+    if (!proxyInput.trim()) {
+      setProxyStatus({ type: 'error', message: 'Please enter a proxy URL first' });
+      return;
+    }
+    setProxyStatus({ type: 'testing', message: 'Testing connection to PakWheels...' });
+    try {
+      const res = await testProxySettings(proxyInput.trim());
+      if (res.status === 'ok') {
+        setProxyStatus({ type: 'success', message: res.message });
+      } else {
+        setProxyStatus({ type: 'error', message: res.message });
+      }
+    } catch (err) {
+      setProxyStatus({ type: 'error', message: err.message || 'Proxy test failed' });
+    }
+  };
+
+  const handleSaveProxy = async () => {
+    setSavingProxy(true);
+    try {
+      await saveProxySettings(proxyInput.trim());
+      setProxyStatus({ type: 'success', message: 'Proxy configuration saved!' });
+    } catch (err) {
+      setProxyStatus({ type: 'error', message: err.message || 'Failed to save proxy' });
+    } finally {
+      setSavingProxy(false);
+    }
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -169,6 +216,20 @@ export default function Navbar({
                     <span className="text-[10px] text-slate-500 dark:text-slate-400">Sync fresh listings file</span>
                   </div>
                 </button>
+
+                <button
+                  onClick={() => {
+                    setShowDbMenu(false);
+                    setShowProxyModal(true);
+                  }}
+                  className="w-full flex items-center space-x-2.5 px-3 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#16345C] rounded-xl transition text-left"
+                >
+                  <Globe className="w-4 h-4 text-purple-500 dark:text-purple-400 flex-shrink-0" />
+                  <div>
+                    <span className="font-bold block text-slate-900 dark:text-white">Scraper Proxy</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Configure Cloudflare proxy</span>
+                  </div>
+                </button>
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -202,6 +263,101 @@ export default function Navbar({
         </div>
 
       </div>
+
+      {/* Standalone Scraper Proxy Modal */}
+      {showProxyModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+          onClick={() => setShowProxyModal(false)}
+        >
+          <div
+            className="bg-white dark:bg-[#0D2342] border border-slate-200 dark:border-[#1C3B66] rounded-3xl max-w-md w-full p-5 shadow-2xl relative text-slate-800 dark:text-slate-100"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between pb-3 border-b border-slate-200 dark:border-[#1A3B6B]">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <Globe className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-slate-900 dark:text-white">Scraper Proxy Settings</h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">Bypass Cloudflare blocks on cloud hosts</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowProxyModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#112646] transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-3.5 space-y-3">
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                If scraping fails on Railway with HTTP 403, enter a residential or datacenter proxy below.
+              </p>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                  Proxy URL (HTTP / HTTPS / SOCKS5):
+                </label>
+                <input
+                  type="text"
+                  value={proxyInput}
+                  onChange={(e) => setProxyInput(e.target.value)}
+                  placeholder="http://user:pass@proxy.example.com:8080"
+                  className="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#112646] border border-slate-300 dark:border-[#1C3B66] text-slate-900 dark:text-white font-mono placeholder:text-slate-400 focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              {proxyStatus && (
+                <div className={`text-[10px] p-2 rounded-xl border flex items-center space-x-1.5 ${
+                  proxyStatus.type === 'success'
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300'
+                    : proxyStatus.type === 'error'
+                    ? 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300'
+                    : 'bg-sky-500/10 border-sky-500/30 text-sky-700 dark:text-sky-300'
+                }`}>
+                  {proxyStatus.type === 'success' && <Check className="w-3 h-3 flex-shrink-0" />}
+                  {proxyStatus.type === 'error' && <AlertCircle className="w-3 h-3 flex-shrink-0" />}
+                  <span>{proxyStatus.message}</span>
+                </div>
+              )}
+
+              <div className="flex items-center space-x-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleTestProxy}
+                  disabled={proxyStatus?.type === 'testing'}
+                  className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-[#112646] dark:hover:bg-[#1C3B66] text-slate-800 dark:text-white transition flex items-center space-x-1"
+                >
+                  {proxyStatus?.type === 'testing' ? <RefreshCw className="w-3 h-3 animate-spin" /> : <span>Test Connection</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveProxy}
+                  disabled={savingProxy}
+                  className="flex-1 py-2 rounded-xl text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition shadow-sm"
+                >
+                  {savingProxy ? 'Saving...' : 'Save Proxy'}
+                </button>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-[#1A3B6B] flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                <span>Need a free proxy?</span>
+                <a
+                  href="https://www.webshare.io/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-600 dark:text-sky-400 font-bold hover:underline flex items-center space-x-0.5"
+                >
+                  <span>Webshare.io (10 Free Proxies) ↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
